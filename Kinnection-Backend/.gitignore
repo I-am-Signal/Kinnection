@@ -1,0 +1,48 @@
+# Build artifacts
+bin/
+obj/
+
+# User-specific files
+*.user
+*.swp
+*.suo
+*.csproj.user
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+LogFiles/
+
+# ASP.NET Core settings
+appsettings.*
+secrets.json
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Dependency folders
+node_modules/
+packages/
+
+# Publish output
+wwwroot/
+out/
+
+# Docker
+*.container.metadata
+**/Dockerfile
+docker-compose.override.yml
+
+# Rider/JetBrains IDE specific files
+.idea/
+*.iml
+
+# Visual Studio Code specific files
+.vscode/
+.history/
+
+# Resharper
+_ReSharper*/
