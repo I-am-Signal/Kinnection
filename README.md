@@ -13,7 +13,7 @@ Kinnection is (going to be) a web application that will allow the user to track 
 
 `Kinnection-Backend`:
 - ASP.NET Core backend
-- **localhost:8080/weatherforecast** is currently the only endpoint, provided by the template
+- **http://localhost:8080/weatherforecast** is currently the only endpoint, provided by the template
 
 `Kinnection-Frontend`:
 - Angular frontend

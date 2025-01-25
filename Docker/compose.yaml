@@ -1,38 +1,38 @@
 services:
-  # mysql:
-  #   image: mysql:latest
-  #   container_name: "${MYSQL_HOST}"
-  #   hostname: "${MYSQL_HOST}"
-  #   networks:
-  #     default:
-  #       aliases:
-  #         - mysqldb
-  #   ports:
-  #     - "${MYSQL_PORT}:${MYSQL_CONTAINER_PORT}"
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-  #     MYSQL_DATABASE: ${MYSQL_DATABASE}
-  #     MYSQL_USER: ${MYSQL_USER}
-  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-  #   volumes:
-  #     - ../Kinnection-Database/data/:/var/lib/mysql
-  #   healthcheck:
-  #     test:
-  #       [
-  #         "CMD",
-  #         "mysqladmin",
-  #         "ping",
-  #         "-h",
-  #         "${MYSQL_HOST}",
-  #         "-u",
-  #         "${MYSQL_USER}",
-  #         "-p${MYSQL_PASSWORD}",
-  #       ]
-  #     interval: 1m30s
-  #     timeout: 30s
-  #     retries: 5
-  #     start_period: 30s
-  #   restart: unless-stopped
+  mysql:
+    image: mysql:latest
+    container_name: "${MYSQL_HOST}"
+    hostname: "${MYSQL_HOST}"
+    networks:
+      default:
+        aliases:
+          - mysqldb
+    ports:
+      - "${MYSQL_PORT}:${MYSQL_CONTAINER_PORT}"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ../Kinnection-Database/data/:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "${MYSQL_HOST}",
+          "-u",
+          "${MYSQL_USER}",
+          "-p${MYSQL_PASSWORD}",
+        ]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   aspdotnet:
     build:
@@ -41,8 +41,8 @@ services:
     container_name: asp
     ports:
       - "${ASP_PORT}:${ASP_CONTAINER_PORT}"
-    # depends_on:
-    #   - mysql
+    depends_on:
+      - mysql
 
   # angular:
   #   build:
