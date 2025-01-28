@@ -6,7 +6,7 @@ services:
     networks:
       default:
         aliases:
-          - mysqldb
+          - mysql
     ports:
       - "${MYSQL_PORT}:${MYSQL_CONTAINER_PORT}"
     environment:
@@ -38,9 +38,23 @@ services:
     build:
       context: ../
       dockerfile: ./Docker/Kinnection-Backend.dockerfile
+    networks:
+      default:
+        aliases:
+          - aspdotnet
     container_name: asp
     ports:
       - "${ASP_PORT}:${ASP_CONTAINER_PORT}"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_PROTOCOL: ${MYSQL_PROTOCOL}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      RETRY_ATTEMPTS: ${RETRY_ATTEMPTS}
+      RETRY_IN: ${RETRY_IN}
     depends_on:
       - mysql
 

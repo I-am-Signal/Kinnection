@@ -17,6 +17,7 @@ LogFiles/
 
 # ASP.NET Core settings
 appsettings.*
+launchSettings.*
 secrets.json
 
 # OS-specific files
