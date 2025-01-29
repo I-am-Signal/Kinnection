@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using System.Net.Http.Headers;
 using System.Text;
 
 namespace Kinnection
@@ -16,16 +15,14 @@ namespace Kinnection
                     StringBuilder output = new StringBuilder();
                     output.Append('[');
 
-                    var books = await context.Book
+                    var bookResponses = await context.Book
                         .Include(p => p.Publisher)
-                        .ToListAsync();
-                    
-                    var bookResponses = books.Select(book => new BookResponse
-                    {
-                        ISBN = book.ISBN,
-                        Title = book.Title,
-                        Publisher = book.Publisher.Name
-                    }).ToList();
+                        .Select(book => new BookResponse
+                        {
+                            ISBN = book.ISBN,
+                            Title = book.Title,
+                            Publisher = (book.Publisher != null) ? book.Publisher.Name : null
+                        }).ToListAsync();
 
                     return Results.Ok(bookResponses);
                 }
@@ -38,77 +35,108 @@ namespace Kinnection
             .WithName("GetResults")
             .WithOpenApi();
 
-            app.MapGet("/insert", async () =>
+            app.MapGet("/result/{title}", async (string title) =>
             {
                 try
                 {
                     using var context = DatabaseManager.GetActiveContext();
-                    // Adds a publisher
-                    var publisher = new Publisher
+                    StringBuilder output = new StringBuilder();
+                    output.Append('[');
+
+                    var book = await context.Book
+                        .Include(p => p.Publisher)
+                        .SingleAsync(b => b.Title == title);
+
+                    var bookResponse = new BookResponse
                     {
-                        Name = "Mariner Books"
+                        ISBN = book.ISBN,
+                        Title = book.Title,
+                        Publisher = book.Publisher?.Name
                     };
-                    context.Publisher.Add(publisher);
 
-                    // Adds some books
-                    context.Book.Add(new Book
-                    {
-                        ISBN = "978-0544003415",
-                        Title = "The Lord of the Rings",
-                        Author = "J.R.R. Tolkien",
-                        Language = "English",
-                        Pages = 1216,
-                        Publisher = publisher
-                    });
-                    context.Book.Add(new Book
-                    {
-                        ISBN = "978-0547247762",
-                        Title = "The Sealed Letter",
-                        Author = "Emma Donoghue",
-                        Language = "English",
-                        Pages = 416,
-                        Publisher = publisher
-                    });
-
-                    // Saves changes
-                    await context.SaveChangesAsync();
-                    return Results.Ok(new { message = "Data was inserted" });
+                    return Results.Ok(bookResponse);
                 }
-                catch (DbUpdateException d)
+                catch (InvalidOperationException)
                 {
-                    Console.WriteLine(d);
-                    return Results.BadRequest(new { message = "Data was previously inserted" });
+                    return Results.Problem(detail: $"Result not found for title: {title}", statusCode: 404);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
-                    return Results.BadRequest(new { message = e.ToString() });
+                    return Results.Problem(statusCode: 500);
+                }
+            })
+            .WithName("GetResult")
+            .WithOpenApi();
+
+            app.MapPost("/insert", async (HttpContext httpContext, BookRequest request) =>
+            {
+                try
+                {
+                    using var context = DatabaseManager.GetActiveContext();
+
+                    Publisher publisher;
+                    try
+                    {
+                        publisher = await context.Publisher
+                            .SingleAsync(p => p.Name == request.PublisherName);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // doesn't work in current db migration, its still set to requiring publisher
+                        publisher = null;
+                    }
+
+                    context.Book.Add(new Book
+                    {
+                        ISBN = request.ISBN,
+                        Title = request.Title,
+                        Author = request.Author,
+                        Language = request.Language,
+                        Pages = request.Pages,
+                        Publisher = publisher
+                    });
+
+                    await context.SaveChangesAsync();
+                    return Results.Ok(new OkResponse { message = $"{request.Title} was inserted" });
+                }
+                catch (DbUpdateException d)
+                {
+                    Console.WriteLine(d);
+                    return Results.Problem(
+                        detail: $"A book with title {request.Title} was previously inserted",
+                        statusCode: 409
+                    );
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    return Results.Problem(statusCode: 500);
                 }
             })
             .WithName("GetInputs")
             .WithOpenApi();
 
-            app.MapDelete("/delete", async () =>
+            app.MapDelete("/delete/{title}", async (string title) =>
             {
                 try
                 {
                     using var context = DatabaseManager.GetActiveContext();
-                    Publisher mariner = await context.Publisher
-                        .SingleAsync(p => p.Name == "Mariner Books");
-                    Book lotr = await context.Book
-                        .SingleAsync(b => b.Title == "The Lord of the Rings");
-                    Book sl = await context.Book
-                        .SingleAsync(b => b.Title == "The Sealed Letter");
-                    context.Remove(lotr);
-                    context.Remove(sl);
-                    context.Remove(mariner);
+                    context.Remove(await context.Book
+                        .SingleAsync(b => b.Title == title));
                     await context.SaveChangesAsync();
-                    return Results.Ok(new { message = "Data was deleted" });
+                    return Results.Ok(new OkResponse
+                    {
+                        message = $"{title} was deleted."
+                    });
                 }
-                catch (DbUpdateException d)
+                catch (InvalidOperationException i)
                 {
-                    Console.WriteLine(d);
-                    return Results.BadRequest(new { message = "Data was previously inserted" });
+                    Console.WriteLine(i);
+                    return Results.Problem(
+                        detail: $"{title} could not be deleted. A book with title {title} does not exist.",
+                        statusCode: 404
+                    );
                 }
                 catch (Exception e)
                 {

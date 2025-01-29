@@ -7,6 +7,13 @@ namespace Kinnection
         private static readonly byte RETRY_ATTEMPTS = Convert.ToByte(Environment.GetEnvironmentVariable("RETRY_ATTEMPTS") ?? "5");
         private static readonly byte RETRY_IN = Convert.ToByte(Environment.GetEnvironmentVariable("RETRY_IN") ?? "5");
 
+        public static readonly string DBURL = 
+            $"Server={Environment.GetEnvironmentVariable("MYSQL_HOST")};" +
+            $"Port={Environment.GetEnvironmentVariable("MYSQL_PORT")};" +
+            $"Database={Environment.GetEnvironmentVariable("MYSQL_DATABASE")};" +
+            $"User={Environment.GetEnvironmentVariable("MYSQL_USER")};" +
+            $"Password={Environment.GetEnvironmentVariable("MYSQL_PASSWORD")};";
+
         private static readonly KinnectionContext? _activeContext;
 
         public static KinnectionContext GetActiveContext()
@@ -22,13 +29,7 @@ namespace Kinnection
                 {
                     // Build the options and context
                     var optionsBuilder = new DbContextOptionsBuilder<KinnectionContext>().UseMySQL();
-                    optionsBuilder.UseMySQL(
-                        $"Server={Environment.GetEnvironmentVariable("MYSQL_HOST")};" +
-                        $"Port={Environment.GetEnvironmentVariable("MYSQL_PORT")};" +
-                        $"Database={Environment.GetEnvironmentVariable("MYSQL_DATABASE")};" +
-                        $"User={Environment.GetEnvironmentVariable("MYSQL_USER")};" +
-                        $"Password={Environment.GetEnvironmentVariable("MYSQL_PASSWORD")};"
-                    );
+                    optionsBuilder.UseMySQL(DBURL);
 
                     var context = new KinnectionContext(optionsBuilder.Options);
                     context.Database.EnsureCreated();

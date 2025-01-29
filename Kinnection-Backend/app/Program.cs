@@ -1,4 +1,5 @@
 using Kinnection;
+using Microsoft.EntityFrameworkCore;
 class Program
 {
   static void Main(string[] args)
@@ -9,6 +10,9 @@ class Program
     // Build API
     var builder = WebApplication.CreateBuilder(args);
     builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddDbContext<KinnectionContext>(options =>
+      options.UseMySQL(DatabaseManager.DBURL));
+
     builder.Services.AddSwaggerGen();
 
     var app = builder.Build();
@@ -26,7 +30,19 @@ class Program
     if (app.Environment.IsProduction())
       app.UseHttpsRedirection();
 
-    // Start API
+    // Migrate
+    using (var scope = app.Services.CreateScope()){
+      var services = scope.ServiceProvider;
+
+      var context = services.GetRequiredService<KinnectionContext>();
+
+      if (context.Database.GetPendingMigrations().Any())
+      {
+        context.Database.Migrate();
+      }
+    }
+
+    // Start API    
     API.APIs(app);
   }
 }
