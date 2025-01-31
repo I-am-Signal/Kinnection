@@ -8,7 +8,7 @@ namespace Kinnection
         private static readonly byte RETRY_IN = Convert.ToByte(Environment.GetEnvironmentVariable("RETRY_IN") ?? "5");
 
         public static readonly string DBURL = 
-            $"Server={Environment.GetEnvironmentVariable("MYSQL_HOST")};" +
+            $"Server={Environment.GetEnvironmentVariable("MYSQL_HOST") ?? Environment.GetEnvironmentVariable("MYSQL_EXTERNAL_HOST")};" +
             $"Port={Environment.GetEnvironmentVariable("MYSQL_PORT")};" +
             $"Database={Environment.GetEnvironmentVariable("MYSQL_DATABASE")};" +
             $"User={Environment.GetEnvironmentVariable("MYSQL_USER")};" +

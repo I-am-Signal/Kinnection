@@ -75,18 +75,6 @@ namespace Kinnection
                 {
                     using var context = DatabaseManager.GetActiveContext();
 
-                    Publisher publisher;
-                    try
-                    {
-                        publisher = await context.Publisher
-                            .SingleAsync(p => p.Name == request.PublisherName);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // doesn't work in current db migration, its still set to requiring publisher
-                        publisher = null;
-                    }
-
                     context.Book.Add(new Book
                     {
                         ISBN = request.ISBN,
@@ -94,11 +82,20 @@ namespace Kinnection
                         Author = request.Author,
                         Language = request.Language,
                         Pages = request.Pages,
-                        Publisher = publisher
+                        Publisher = await context.Publisher
+                            .SingleAsync(p => p.Name == request.PublisherName)
                     });
 
                     await context.SaveChangesAsync();
                     return Results.Ok(new OkResponse { message = $"{request.Title} was inserted" });
+                }
+                catch (InvalidOperationException i)
+                {
+                    Console.WriteLine(i);
+                    return Results.Problem(
+                        detail: $"A publisher with name {request.PublisherName} does not exist.",
+                        statusCode: 404
+                    );
                 }
                 catch (DbUpdateException d)
                 {

@@ -1,3 +1,6 @@
+# Migrations
+Migrations/
+
 # Build artifacts
 bin/
 obj/
@@ -47,6 +50,3 @@ docker-compose.override.yml
 
 # Resharper
 _ReSharper*/
-
-# In Dev
-GetEnvVars.ps1
