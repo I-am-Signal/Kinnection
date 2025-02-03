@@ -32,7 +32,9 @@ namespace Kinnection
                     optionsBuilder.UseMySQL(DBURL);
 
                     var context = new KinnectionContext(optionsBuilder.Options);
-                    context.Database.EnsureCreated();
+                    if (!context.Database.CanConnect()){
+                        throw new Exception("Database is not ready for connection.");
+                    }
 
                     Console.WriteLine("Connection to database was successful.");
                     return context;
