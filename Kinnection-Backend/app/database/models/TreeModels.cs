@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Kinnection
 {
     public class Tree : BaseMixin
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public required int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required User User { get; set; }
@@ -11,6 +14,7 @@ namespace Kinnection
 
     public class Member : BaseMixin
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public required int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public virtual required Tree Tree { get; set; }

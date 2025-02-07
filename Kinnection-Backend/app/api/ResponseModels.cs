@@ -1,11 +1,15 @@
-public class BookResponse
+namespace Kinnection
 {
-    public string ISBN { get; set; }
-    public string Title { get; set; }
-    public string Publisher { get; set; }
-}
+    public class OkResponse
+    {
+        public string message { get; set; }
+    }
 
-public class OkResponse
-{
-    public string message { get; set; }
+    public class UserResponse
+    {
+        public int ID { get; set; }
+        public string Fname { get; set; }
+        public string Lname { get; set; }
+        public string Email { get; set; }
+    }
 }

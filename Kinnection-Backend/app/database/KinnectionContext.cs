@@ -5,27 +5,34 @@ namespace Kinnection
     public class KinnectionContext : DbContext
     {
         public KinnectionContext(DbContextOptions<KinnectionContext> options) : base(options) { }
-        public DbSet<Book> Book { get; set; }
 
-        public DbSet<Publisher> Publisher { get; set; }
+        public DbSet<User> Users { get; set; }
+        
+        public DbSet<Password> Passwords { get; set; }
+
+        public DbSet<Tree> Trees { get; set; }
+
+        public DbSet<Member> Members { get; set; }
+
+        public DbSet<Education> Educations { get; set; }
+
+        public DbSet<Hobby> Hobbies { get; set; }
+
+        public DbSet<MemberEmail> Emails { get; set; }
+
+        public DbSet<MemberPhone> Phones { get; set; }
+
+        public DbSet<ParentalRelationship> ParentalRelationships { get; set; }
+
+        public DbSet<Residence> Residences { get; set; }
+
+        public DbSet<Spouse> Spouses { get; set; }
+
+        public DbSet<Work> Works { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // Template Models
-            modelBuilder.Entity<Publisher>(entity =>
-            {
-                entity.HasKey(e => e.ID);
-                entity.Property(e => e.Name).IsRequired();
-            });
-
-            modelBuilder.Entity<Book>(entity =>
-            {
-                entity.HasKey(e => e.ISBN);
-                entity.Property(e => e.Title).IsRequired();
-                entity.HasOne(d => d.Publisher).WithMany(p => p.Books);
-            });
 
             // User Models
             modelBuilder.Entity<User>(entity =>
@@ -58,7 +65,7 @@ namespace Kinnection
                 entity.HasOne(d => d.Member);
             });
 
-            modelBuilder.Entity<Hobbies>(entity =>
+            modelBuilder.Entity<Hobby>(entity =>
             {
                 entity.HasKey(e => e.ID);
                 entity.HasOne(d => d.Member);
@@ -76,7 +83,7 @@ namespace Kinnection
                 entity.HasOne(d => d.Member);
             });
 
-            modelBuilder.Entity<ParentChild>(entity =>
+            modelBuilder.Entity<ParentalRelationship>(entity =>
             {
                 entity.HasKey(e => e.ID);
                 entity.HasOne(d => d.Parent);

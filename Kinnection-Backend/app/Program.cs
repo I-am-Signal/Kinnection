@@ -46,7 +46,8 @@ class Program
       }
     }
 
-    // Start API    
-    API.APIs(app);
+    // Start APIs
+    app = TreeAPIs.APIs(app);
+    app.Run();
   }
 }
