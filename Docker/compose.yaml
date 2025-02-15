@@ -66,5 +66,7 @@ services:
     container_name: ang
     ports:
       - "${ANG_CONTAINER_PORT}:${ANG_PORT}"
+    environment:
+      ANG_CONTAINER_PORT: ${ANG_CONTAINER_PORT}
     depends_on:
       - aspdotnet

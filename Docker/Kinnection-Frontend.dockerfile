@@ -18,8 +18,9 @@ FROM nginx:stable-alpine AS runtime
 COPY --from=build /app/dist/kinnection-frontend/browser /usr/share/nginx/html
 
 # Copy NGINX config file
-COPY Docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY Docker/nginx.conf /etc/nginx/templates/default.conf.template
 
+# Set environment variables and substitute them in the config file
 # Expose the port and start the app
 EXPOSE ${ANG_CONTAINER_PORT}
-CMD ["nginx", "-g", "daemon off;"]
+CMD envsubst '${ANG_CONTAINER_PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'
