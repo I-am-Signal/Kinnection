@@ -8,6 +8,8 @@ namespace Kinnection
 
         public DbSet<User> Users { get; set; }
         
+        public DbSet<Authentication> Authentications { get; set; }
+        
         public DbSet<Password> Passwords { get; set; }
 
         public DbSet<Tree> Trees { get; set; }
@@ -40,10 +42,14 @@ namespace Kinnection
                 entity.HasKey(e => e.ID);
             });
 
+            modelBuilder.Entity<Authentication>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+            });
+
             modelBuilder.Entity<Password>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.User);
             });
 
             // Tree Models

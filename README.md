@@ -71,3 +71,10 @@ The `.env.template` file contains a template of the `.env` file that should be p
 
 - `ANG_PORT`: Port at which the Angular frontend app can be accessed.
 - `ANG_CONTAINER_PORT`: Port at which the container binds to the overlaying frontend app.
+
+### Auth Management Vars
+- `ACCESS_DURATION`: Number of minutes an Access JWT is valid for before expiration
+- `REFRESH_DURATION`: Number of days a Refresh JWT is valid for before expiration
+- `ISSUER`: The issuer for the JWTs
+- `SECRET`: The JWT secret
+- `KEY`: The hash key

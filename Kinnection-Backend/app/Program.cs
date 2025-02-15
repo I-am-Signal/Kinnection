@@ -47,7 +47,7 @@ class Program
     }
 
     // Start APIs
-    app = TreeAPIs.APIs(app);
+    UserAPIs.APIs(app);
     app.Run();
   }
 }

@@ -56,6 +56,11 @@ services:
       RETRY_ATTEMPTS: ${RETRY_ATTEMPTS}
       RETRY_IN: ${RETRY_IN}
       APPLY_MIGRATIONS: ${APPLY_MIGRATIONS}
+      ACCESS_DURATION: ${ACCESS_DURATION}
+      REFRESH_DURATION: ${REFRESH_DURATION}
+      ISSUER: ${ISSUER}
+      SECRET: ${SECRET}
+      KEY: ${KEY}
     depends_on:
       - mysql
 

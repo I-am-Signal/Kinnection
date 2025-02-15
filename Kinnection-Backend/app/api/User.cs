@@ -1,12 +1,31 @@
 using Microsoft.EntityFrameworkCore;
 
+// // Apparently Insecure for passwords alone
+// byte[] data = System.Text.Encoding.ASCII.GetBytes(inputString);
+// data = new System.Security.Cryptography.SHA256Managed().ComputeHash(data);
+// String hash = System.Text.Encoding.ASCII.GetString(data);
+
+
+// // Better password hashing
+// using Microsoft.AspNetCore.Identity;
+
+// var hasher = new PasswordHasher<object>();
+
+// // Hash password
+// string HashedPassword = hasher.HashPassword(null, "MySecurePassword");
+
+// // Verify password
+// PasswordVerificationResult result = hasher.VerifyHashedPassword(null, hashedPassword, "MySecurePassword");
+// bool isMatch = result == PasswordVerificationResult.Success;
+
+
 namespace Kinnection
 {
-    static class TreeAPIs
+    static class UserAPIs
     {
         public static WebApplication APIs(WebApplication app)
         {
-            app.MapPost("/user", async (HttpContext httpContext, UserRequest request) =>
+            app.MapPost("/users", async (HttpContext httpContext, UserRequest request) =>
             {
                 try
                 {
@@ -25,7 +44,6 @@ namespace Kinnection
                         Fname = request.Fname,
                         Lname = request.Lname,
                         Email = request.Email,
-                        Token = "temp",
                         GoogleSO = false
                     };
 
@@ -58,7 +76,7 @@ namespace Kinnection
             .WithOpenApi();
 
 
-            app.MapPut("/user/{id}", async (int id, HttpContext httpContext, UserRequest request) =>
+            app.MapPut("/users/{id}", async (int id, HttpContext httpContext, UserRequest request) =>
             {
                 try
                 {
@@ -100,7 +118,7 @@ namespace Kinnection
             .WithOpenApi();
 
 
-            app.MapGet("/users", async () =>
+            app.MapGet("/users/", async () =>
             {
                 try
                 {
@@ -126,7 +144,7 @@ namespace Kinnection
             .WithOpenApi();
 
 
-            app.MapGet("/user/{id}", async (int id) =>
+            app.MapGet("/users/{id}", async (int id) =>
             {
                 try
                 {
@@ -153,7 +171,7 @@ namespace Kinnection
             .WithOpenApi();
 
 
-            app.MapDelete("/user/{id}", async (int id) =>
+            app.MapDelete("/users/{id}", async (int id) =>
             {
                 try
                 {
