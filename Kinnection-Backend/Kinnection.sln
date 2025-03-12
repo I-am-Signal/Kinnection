@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kinnection-Backend", "app\Kinnection-Backend.csproj", "{9BFB1ADE-2658-4CCE-8942-2F4775B7A149}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{6E4111DA-D075-4264-BEE5-D453BD5A9D09}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{9BFB1ADE-2658-4CCE-8942-2F4775B7A149}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BFB1ADE-2658-4CCE-8942-2F4775B7A149}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BFB1ADE-2658-4CCE-8942-2F4775B7A149}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E4111DA-D075-4264-BEE5-D453BD5A9D09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E4111DA-D075-4264-BEE5-D453BD5A9D09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E4111DA-D075-4264-BEE5-D453BD5A9D09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E4111DA-D075-4264-BEE5-D453BD5A9D09}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

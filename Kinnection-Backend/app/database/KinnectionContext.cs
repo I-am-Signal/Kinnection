@@ -18,6 +18,8 @@ namespace Kinnection
 
         public DbSet<Education> Educations { get; set; }
 
+        public DbSet<Encryption> EncryptionKeys { get; set; }
+
         public DbSet<Hobby> Hobbies { get; set; }
 
         public DbSet<MemberEmail> Emails { get; set; }
@@ -35,6 +37,12 @@ namespace Kinnection
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Encryption Models
+            modelBuilder.Entity<Encryption>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+            });
 
             // User Models
             modelBuilder.Entity<User>(entity =>

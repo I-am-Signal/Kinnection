@@ -25,7 +25,7 @@ namespace Kinnection
     {
         public static WebApplication APIs(WebApplication app)
         {
-            app.MapPost("/users", async (HttpContext httpContext, UserRequest request) =>
+            app.MapPost("/users", async (HttpContext httpContext, PostUserRequest request) =>
             {
                 try
                 {
@@ -49,8 +49,23 @@ namespace Kinnection
 
                     context.Users.Add(NewUser);
 
+                    // var EncryptionKeys = await context.EncryptionKeys
+                    //     .OrderByDescending(b => b.Created)
+                    //     .FirstOrDefaultAsync()
+                    //     ?? throw new KeyNotFoundException();
+
+                    Password NewPass = new Password
+                    {
+                        Created = DateTime.UtcNow,
+                        UserID = NewUser.ID,
+                        // PassString = KeyMaster.DecryptWithPrivateKey(request.Password, EncryptionKeys.Private)
+                        PassString = request.Password
+                    };
+
+                    context.Passwords.Add(NewPass);
+
                     await context.SaveChangesAsync();
-                    return Results.Ok(new UserResponse
+                    return Results.Created($"/users/{NewUser.ID}", new UserResponse
                     {
                         ID = NewUser.ID,
                         Fname = NewUser.Fname,

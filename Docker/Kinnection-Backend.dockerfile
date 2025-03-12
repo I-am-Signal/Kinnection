@@ -4,6 +4,7 @@ WORKDIR /Kinnection
 # Copy backend files into layer
 COPY Kinnection-Backend/Kinnection.sln .
 COPY Kinnection-Backend/app ./app/
+COPY Kinnection-Backend/test ./test/
 
 # Restore as distinct layers
 RUN dotnet restore

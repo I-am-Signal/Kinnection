@@ -5,6 +5,9 @@ Migrations/
 bin/
 obj/
 
+# Test artifacts
+TestResults/
+
 # User-specific files
 *.user
 *.swp

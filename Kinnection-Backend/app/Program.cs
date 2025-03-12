@@ -37,13 +37,35 @@ class Program
       {
         var services = scope.ServiceProvider;
 
-        var context = services.GetRequiredService<KinnectionContext>();
+        var MigrationContext = services.GetRequiredService<KinnectionContext>();
 
-        if (context.Database.GetPendingMigrations().Any())
+        if (MigrationContext.Database.GetPendingMigrations().Any())
         {
-          context.Database.Migrate();
+          MigrationContext.Database.Migrate();
         }
       }
+    }
+
+    // Ensure encryption keys exist
+    using var Context = DatabaseManager.GetActiveContext();
+    Encryption? EncryptionKeys;
+    try
+    {
+      EncryptionKeys = Context.EncryptionKeys
+        .OrderByDescending(e => e.Created)
+        .FirstOrDefault();
+    } finally { }
+    
+    if (null == EncryptionKeys)
+    {
+      var Keys = KeyMaster.GenerateKeys();
+
+      Context.Add(new Encryption
+      {
+        Created = DateTime.UtcNow,
+        Public = Keys["public"],
+        Private = Keys["private"]
+      });
     }
 
     // Start APIs
