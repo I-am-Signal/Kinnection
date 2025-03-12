@@ -5,7 +5,7 @@ namespace Kinnection
     public class Education : BaseMixin, TimelineMixin, EventMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
@@ -18,7 +18,7 @@ namespace Kinnection
     public class Hobby : BaseMixin, TimelineMixin, EventMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
@@ -32,7 +32,7 @@ namespace Kinnection
     // public class Image : BaseMixin, PrimaryMixin
     // {
     //     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    //     public required int ID { get; set; }
+    //     public int ID { get; set; }
     //     public required DateTime Created { get; set; }
     //     public required bool Primary { get; set; }
     //     public required Member Member { get; set; }
@@ -44,7 +44,7 @@ namespace Kinnection
     public class MemberEmail : BaseMixin, PrimaryMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required bool Primary { get; set; }
         public required Member Member { get; set; }
@@ -54,7 +54,7 @@ namespace Kinnection
     public class MemberPhone : BaseMixin, PrimaryMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required bool Primary { get; set; }
         public required Member Member { get; set; }
@@ -64,7 +64,7 @@ namespace Kinnection
     public class ParentalRelationship : BaseMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required Member Child { get; set; }
         public required Member Parent { get; set; }
@@ -74,7 +74,7 @@ namespace Kinnection
     public class Residence : BaseMixin, TimelineMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
@@ -89,7 +89,7 @@ namespace Kinnection
     public class Spouse : BaseMixin, TimelineMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
@@ -100,7 +100,7 @@ namespace Kinnection
     public class Work : BaseMixin, TimelineMixin, EventMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }

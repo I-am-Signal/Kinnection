@@ -16,7 +16,7 @@ namespace Kinnection
     public class Password : BaseMixin
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public required int ID { get; set; }
+        public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required int UserID { get; set; }
         public required string PassString { get; set; }
