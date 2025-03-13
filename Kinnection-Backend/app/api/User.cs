@@ -25,7 +25,7 @@ namespace Kinnection
     {
         public static WebApplication APIs(WebApplication app)
         {
-            app.MapPost("/users", async (HttpContext httpContext, PostUserRequest request) =>
+            app.MapPost("/users", async (HttpContext httpContext, PostUsersRequest request) =>
             {
                 try
                 {
@@ -65,7 +65,7 @@ namespace Kinnection
                     context.Passwords.Add(NewPass);
 
                     await context.SaveChangesAsync();
-                    return Results.Created($"/users/{NewUser.ID}", new UserResponse
+                    return Results.Created($"/users/{NewUser.ID}", new GetUsersResponse
                     {
                         ID = NewUser.ID,
                         Fname = NewUser.Fname,
@@ -91,7 +91,7 @@ namespace Kinnection
             .WithOpenApi();
 
 
-            app.MapPut("/users/{id}", async (int id, HttpContext httpContext, UserRequest request) =>
+            app.MapPut("/users/{id}", async (int id, HttpContext httpContext, PutUsersRequest request) =>
             {
                 try
                 {
@@ -107,7 +107,7 @@ namespace Kinnection
 
                     await context.SaveChangesAsync();
 
-                    return Results.Ok(new UserResponse
+                    return Results.Ok(new GetUsersResponse
                     {
                         ID = existing.ID,
                         Fname = existing.Fname,
@@ -139,7 +139,7 @@ namespace Kinnection
                 {
                     using var Context = DatabaseManager.GetActiveContext();
                     var output = await Context.Users
-                        .Select(user => new UserResponse
+                        .Select(user => new GetUsersResponse
                         {
                             ID = user.ID,
                             Fname = user.Fname,
@@ -165,7 +165,7 @@ namespace Kinnection
                 {
                     using var Context = DatabaseManager.GetActiveContext();
                     var output = await Context.Users
-                        .Select(user => new UserResponse
+                        .Select(user => new GetUsersResponse
                         {
                             ID = user.ID,
                             Fname = user.Fname,
@@ -197,7 +197,7 @@ namespace Kinnection
                     Context.Remove(DeletedUser);
                     await Context.SaveChangesAsync();
 
-                    return Results.Ok(new UserResponse
+                    return Results.Ok(new GetUsersResponse
                     {
                         ID = DeletedUser.ID,
                         Fname = DeletedUser.Fname,

@@ -5,7 +5,7 @@ class Program
   static void Main(string[] args)
   {
     // Connect to the DB
-    DatabaseManager.GetActiveContext();
+    using var Context = DatabaseManager.GetActiveContext();
 
     // Build API
     var builder = WebApplication.CreateBuilder(args);
@@ -47,7 +47,6 @@ class Program
     }
 
     // Ensure encryption keys exist
-    using var Context = DatabaseManager.GetActiveContext();
     Encryption? EncryptionKeys;
     try
     {
@@ -59,13 +58,14 @@ class Program
     if (null == EncryptionKeys)
     {
       var Keys = KeyMaster.GenerateKeys();
-
       Context.Add(new Encryption
       {
         Created = DateTime.UtcNow,
         Public = Keys["public"],
         Private = Keys["private"]
       });
+      Context.SaveChanges();
+      Console.WriteLine("New encryption keys have been created.");
     }
 
     // Start APIs
