@@ -46,11 +46,52 @@ namespace Kinnection
         );
 
         /// <summary>
-        /// Provisions a new set of tokens to the user of UserID. 
+        /// Authenticates and places refreshed tokens into the HttpContext if SaveHeaders is true.
+        /// </summary>
+        /// <param name="httpContext"></param>
+        /// <param name="UserID"></param>
+        /// <param name="SaveHeaders"></param>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="AuthenticationException"></exception>
+        public static async Task Authenticate(
+            KinnectionContext Context,
+            HttpContext httpContext,
+            int UserID,
+            bool SaveHeaders = true)
+        {
+            // Ensure user exists
+            var ExistingUser = await Context.Users
+                .FirstOrDefaultAsync(b => b.ID == UserID) ??
+                    throw new KeyNotFoundException($"A user with id {UserID} does not exist.");
+
+            // Decrypt tokens
+            var PrivateKey = (await Context.EncryptionKeys.FirstOrDefaultAsync())!.Private;
+            string Authorization = KeyMaster.DecryptWithPrivateKey(
+                httpContext.Request.Headers.Authorization!,
+                PrivateKey
+            );
+            Authorization = Authorization.Split(" ", 2)[1]; // remove 'Bearer'
+
+            string Refresh = KeyMaster.DecryptWithPrivateKey(
+                httpContext.Request.Headers["X-Refresh-Token"]!,
+                PrivateKey
+            );
+
+            // Ensure tokens match user
+            var Tokens = await Check(Authorization, Refresh, UserID);
+            if (SaveHeaders)
+            {
+                httpContext.Response.Headers.Authorization = Tokens["access"];
+                httpContext.Response.Headers["X-Refresh-Token"] = Tokens["refresh"];
+            }
+        }
+
+        /// <summary>
+        /// Provisions a new set of tokens to the user of UserID, accessible with keys "access" and "refresh".
         /// Only use this function when a successful login occurs to issue a user brand new tokens.
         /// </summary>
         /// <param name="UserID"></param>
-        public static async Task<string[]> Provision(int UserID)
+        public static async Task<Dictionary<string, string>> Provision(int UserID)
         {
             using var Context = DatabaseManager.GetActiveContext();
             var Auth = await Context.Authentications.FirstOrDefaultAsync(b => b.UserID == UserID);
@@ -78,17 +119,18 @@ namespace Kinnection
 
             await Context.SaveChangesAsync();
 
-            string[] tokens = [
-                HashToken(Auth.Authorization),
-                HashToken(Auth.Refresh)
-            ];
+            var tokens = new Dictionary<string, string>
+            {
+                ["access"] = HashToken(Auth.Authorization),
+                ["refresh"] = HashToken(Auth.Refresh)
+            };
 
             return await Task.FromResult(tokens);
         }
 
         /// <summary>
         /// Verifies and refreshes tokens of user with UserID (if needed), returning
-        /// a string array containing, in order, the access and refresh tokens.
+        /// a Dictionary with tokens accessible at keys "access" and "refresh".
         /// </summary>
         /// <param name="Access"></param>
         /// <param name="Refresh"></param>
@@ -99,14 +141,14 @@ namespace Kinnection
         {
             using var context = DatabaseManager.GetActiveContext();
             var Auth = await context.Authentications.FirstOrDefaultAsync(b => b.UserID == UserID)
-                ?? throw new KeyNotFoundException();
+                ?? throw new KeyNotFoundException($"User with ID {UserID} is not logged in.");
 
             // Verify access token is current access token
-            if (!CheckHashEquivalence(Access, Auth.Authorization))
+            if (!CheckJWTHashEquivalence(Access, Auth.Authorization))
                 throw new AuthenticationException("Invalid access token.");
 
             // Verify refresh token is not previous refresh token
-            if (CheckHashEquivalence(Refresh, Auth.PrevRef))
+            if (CheckJWTHashEquivalence(Refresh, Auth.PrevRef))
             {
                 // Invalidate the tokens, unauthorized access attempt occurred
                 Auth.Authorization = GenerateRandomString(64);
@@ -115,13 +157,13 @@ namespace Kinnection
                 throw new AuthenticationException("Access denied.");
             }
 
-            bool ValidRefresh = CheckHashEquivalence(Refresh, Auth.Refresh) && IsExpired(Auth.Refresh);
+            bool ValidRefresh = CheckJWTHashEquivalence(Refresh, Auth.Refresh) && IsExpired(Auth.Refresh);
 
             // Verify access token is valid
             if (IsExpired(Auth.Authorization))
             {
                 if (!ValidRefresh)
-                    throw new AuthenticationException("Access token expired. Re-authentication required.");
+                    throw new AuthenticationException("Re-authentication required.");
                 Auth.Authorization = GenerateAccessPayload(UserID);
             }
 
@@ -137,51 +179,13 @@ namespace Kinnection
                 Auth.PrevRef = GenerateRandomString(64);
             }
 
-            Dictionary<string, string> tokens = new Dictionary<string, string>()
-            {
-                {"Authorization", HashToken(Auth.Authorization)},
-                {"Refresh", HashToken(Auth.Refresh)}
-            };
-
-            return await Task.FromResult(tokens);
-        }
-
-        /// <summary>
-        /// Verifies and refreshes tokens of user with UserID (if needed), returning
-        /// a string array containing, in order, the access and refresh tokens.
-        /// </summary>
-        /// <param name="Access"></param>
-        /// <param name="Refresh"></param>
-        /// <param name="UserID"></param>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="AccessViolationException"></exception>
-        private static async Task<Dictionary<string, string>> Refresh(string Access, string Refresh, int UserID)
-        {
-            using var context = DatabaseManager.GetActiveContext();
-            var Auth = await context.Authentications.FirstOrDefaultAsync(b => b.UserID == UserID)
-                ?? throw new KeyNotFoundException();
-
-            // Verify access token is valid
-            bool AccessIsValid = CheckHashEquivalence(Access, Auth.Authorization);
-
-            // Verify refresh token is not the previous one
-            bool RefreshIsPrevious = CheckHashEquivalence(Refresh, Auth.PrevRef);
-
-            // Verify refresh token is valid
-            bool RefreshIsValid = CheckHashEquivalence(Access, Auth.Refresh);
-
-            // Update tokens (if necessary)
-            Auth.PrevRef = Auth.Refresh;
-            Auth.Authorization = GenerateAccessPayload(UserID);
-            Auth.Refresh = GenerateRefreshPayload(UserID);
-
-            Dictionary<string, string> tokens = new Dictionary<string, string>()
-            {
-                {"Authorization", HashToken(Auth.Authorization)},
-                {"Refresh", HashToken(Auth.Refresh)}
-            };
-
-            return await Task.FromResult(tokens);
+            return await Task.FromResult(
+                new Dictionary<string, string>()
+                {
+                    {"access", HashToken(Auth.Authorization)},
+                    {"refresh", HashToken(Auth.Refresh)}
+                }
+            );
         }
 
         /// <summary>
@@ -191,28 +195,37 @@ namespace Kinnection
         /// <param name="Hash"></param>
         /// <param name="Payload"></param>
         /// <returns></returns>
-        private static bool CheckHashEquivalence(string Hash, string Payload)
+        private static bool CheckJWTHashEquivalence(string Hash, string Payload)
         {
             // Compile the token from the saved source
             string JWTCompiled = HashToken(Payload);
 
             // Verify tokens are the same
-            if (JWTCompiled.Length != Hash.Length)
-            {
-                Console.WriteLine("Token mismatch");
-                return false;
-            }
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(JWTCompiled),
+                Encoding.UTF8.GetBytes(Hash)
+            );
+        }
 
-            for (int i = 0; i < Hash.Length; i++)
-            {
-                if (JWTCompiled[i] != Hash[i])
-                {
-                    Console.WriteLine("Token mismatch");
-                    return false;
-                }
-            }
-            Console.WriteLine("Tokens match");
-            return true;
+        /// <summary>
+        /// Returns true if PlainText, when hashed, is equivalent to the Hash parameter.
+        /// </summary>
+        /// <param name="Hash"></param>
+        /// <param name="PlainText"></param>
+        /// <returns></returns>
+        public static bool CheckHashEquivalence(string Hash, string PlainText)
+        {
+            using HMACSHA256 HMAC = new HMACSHA256(KEY);
+            string HashedText = Convert.ToBase64String(
+                HMAC.ComputeHash(
+                    Encoding.UTF8.GetBytes(PlainText)
+                )
+            );
+
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(HashedText),
+                Encoding.UTF8.GetBytes(Hash)
+            );
         }
 
         /// <summary>
@@ -221,15 +234,14 @@ namespace Kinnection
         /// <returns></returns>
         private static string GenerateRandomString(int length = 24)
         {
-            ;
-            return RandomNumberGenerator.GetString(new Char[]
-                {
+            return RandomNumberGenerator.GetString(
+                [
                     'A','B','C','D','E','F','G','H','I','J','K','L','M',
                     'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                     'a','b','c','d','e','f','g','h','i','j','k','l','m',
                     'n','o','p','q','r','s','t','u','v','w','x','y','z',
                     '0','1','2','3','4','5','6','7','8','9','#','@','$'
-                },
+                ],
                 length
             );
         }
@@ -316,7 +328,10 @@ namespace Kinnection
             {
                 ParsedToken = JsonSerializer.Deserialize<Dictionary<string, string>>(Token)!;
             }
-            catch (JsonException) { throw new AuthenticationException("Invalid token."); }
+            catch (JsonException)
+            {
+                throw new AuthenticationException("Invalid token.");
+            }
 
             return DateTimeOffset.Compare(
                     DateTimeOffset.FromUnixTimeSeconds(

@@ -58,15 +58,19 @@ class Program
     if (null == EncryptionKeys)
     {
       var Keys = KeyMaster.GenerateKeys();
-      Context.Add(new Encryption
+      EncryptionKeys = new Encryption
       {
         Created = DateTime.UtcNow,
         Public = Keys["public"],
         Private = Keys["private"]
-      });
+      };
+
+      Context.Add(EncryptionKeys);
       Context.SaveChanges();
       Console.WriteLine("New encryption keys have been created.");
     }
+
+    KeyMaster.SetKeys(EncryptionKeys.Public, EncryptionKeys.Private);
 
     // Start APIs
     UserAPIs.APIs(app);
