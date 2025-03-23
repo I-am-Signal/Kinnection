@@ -59,7 +59,6 @@ services:
       ACCESS_DURATION: ${ACCESS_DURATION}
       REFRESH_DURATION: ${REFRESH_DURATION}
       ISSUER: ${ISSUER}
-      SECRET: ${SECRET}
       KEY: ${KEY}
     depends_on:
       - mysql

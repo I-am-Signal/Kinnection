@@ -34,7 +34,7 @@ namespace Kinnection
                         .FirstOrDefaultAsync()
                         ?? throw new Exception()).Private;
 
-                    string Password = KeyMaster.DecryptWithPrivateKey(Request.Password, PrivateKey);
+                    string Password = KeyMaster.Decrypt(Request.Password, PrivateKey);
 
                     if (!Authenticator.CheckHashEquivalence(ExistingPass!.PassString, Password))
                     {
@@ -120,7 +120,7 @@ namespace Kinnection
                     {
                         using var Context = DatabaseManager.GetActiveContext();
                         Public = (await Context.EncryptionKeys.FirstOrDefaultAsync())!.Public;
-                        Environment.SetEnvironmentVariable("Public", Public);
+                        Environment.SetEnvironmentVariable("Public", Public, EnvironmentVariableTarget.Machine);
                     }
 
                     httpContext.Response.Headers["X-Public"] = Public;
