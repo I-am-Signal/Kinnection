@@ -1,9 +1,9 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Security.Cryptography;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Authentication;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Kinnection
 {
@@ -27,59 +27,37 @@ namespace Kinnection
         public static async Task Authenticate(
             KinnectionContext Context,
             HttpContext httpContext,
-            int UserID,
             bool SaveHeaders = true)
         {
-            // Ensure user exists
-            var ExistingUser = await Context.Users
-                .FirstOrDefaultAsync(b => b.ID == UserID) ??
-                    throw new KeyNotFoundException($"A user with id {UserID} does not exist.");
+            var Keys = KeyMaster.SearchKeys();
 
-            // Decrypt tokens
-            var PrivateKey = (await Context.EncryptionKeys.FirstOrDefaultAsync())!.Private;
-            string Authorization = KeyMaster.Decrypt(
-                httpContext.Request.Headers.Authorization!,
-                PrivateKey
-            );
-            Authorization = Authorization.Split(" ", 2)[1]; // remove 'Bearer'
+            // Process and verify tokens
+            var Access = KeyMaster.ProcessToken(httpContext.Request.Headers.Authorization!, Keys.Public);
+            var Refresh = KeyMaster.ProcessToken(httpContext.Request.Headers["X-Refresh-Token"]!, Keys.Public);
 
-            string Refresh = KeyMaster.Decrypt(
-                httpContext.Request.Headers["X-Refresh-Token"]!,
-                PrivateKey
-            );
+            string AccessUser = Access["payload"]["sub"];
+            string RefreshUser = Refresh["payload"]["sub"];
 
-            // Ensure tokens match user
-            var Tokens = await Check(Authorization, Refresh, UserID);
-            if (SaveHeaders)
-            {
-                httpContext.Response.Headers.Authorization = Tokens["access"];
-                httpContext.Response.Headers["X-Refresh-Token"] = Tokens["refresh"];
-            }
-        }
+            if (AccessUser != RefreshUser)
+                throw new AuthenticationException("Tokens do not match.");
 
-        /// <summary>
-        /// Verifies and refreshes tokens of user with UserID (if needed), returning
-        /// a Dictionary with tokens accessible at keys "access" and "refresh".
-        /// </summary>
-        /// <param name="Access"></param>
-        /// <param name="Refresh"></param>
-        /// <param name="UserID"></param>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="AuthenticationException"></exception>
-        public static async Task<Dictionary<string, string>> Check(string Access, string Refresh, int UserID)
-        {
-            string PrivateKey = Environment.GetEnvironmentVariable("private")!;
+            int UserID = Convert.ToInt32(AccessUser);
 
-            using var context = DatabaseManager.GetActiveContext();
-            var Auth = await context.Authentications.FirstOrDefaultAsync(b => b.UserID == UserID)
+            var Auth = await Context.Authentications.FirstOrDefaultAsync(b => b.UserID == UserID)
                 ?? throw new KeyNotFoundException($"User with ID {UserID} is not logged in.");
 
-            // Verify access token is current access token
-            if (!KeyMaster.VerifyToken(Access, PrivateKey))
-                throw new AuthenticationException("Invalid access token.");
+            // Verify access token matches user
+            if (!KeyMaster.VerifySigning(
+                Base64UrlEncoder.DecodeBytes(Access["signature"]["signature"]),
+                Base64UrlEncoder.DecodeBytes(Auth.Authorization),
+                Keys.Public)
+            ) throw new AuthenticationException("Access denied.");
 
             // Verify refresh token is not previous refresh token
-            if (IsPreviousRefresh(Refresh, Auth.PrevRef))
+            if (KeyMaster.VerifySigning(
+                Base64UrlEncoder.DecodeBytes(Refresh["signature"]["signature"]),
+                Base64UrlEncoder.DecodeBytes(Auth.PrevRef),
+                Keys.Public))
             {
                 // Invalidate the tokens, unauthorized access attempt occurred
                 Auth.Authorization = GenerateRandomString(64);
@@ -88,21 +66,40 @@ namespace Kinnection
                 throw new AuthenticationException("Access denied.");
             }
 
-            bool ValidRefresh = !KeyMaster.VerifyToken(Refresh, PrivateKey) && IsExpired(Auth.Refresh);
+            bool RefMatchesUser = KeyMaster.VerifySigning(
+                Base64UrlEncoder.DecodeBytes(Refresh["signature"]["signature"]),
+                Base64UrlEncoder.DecodeBytes(Auth.Refresh),
+                Keys.Public);
+
+            bool RefIsExpired = IsExpired(
+                DateTimeOffset.FromUnixTimeSeconds(
+                    Convert.ToInt64(Refresh["payload"]["exp"])
+                ));
+
+            bool AccIsExpired = IsExpired(
+                DateTimeOffset.FromUnixTimeSeconds(
+                    Convert.ToInt64(Access["payload"]["exp"])
+                )
+            );
+
+            string AccessToken = "";
+            string RefreshToken = "";
 
             // Verify access token is valid
-            if (IsExpired(Auth.Authorization))
+            if (AccIsExpired)
             {
-                if (!ValidRefresh)
+                if (!RefMatchesUser || RefIsExpired)
                     throw new AuthenticationException("Re-authentication required.");
-                Auth.Authorization = GenerateAccessPayload(UserID);
+                AccessToken = SignToken(GenerateAccessPayload(UserID));
+                Auth.Authorization = AccessToken.Split('.')[2];
             }
 
             // Verify refresh token is valid and unexpired
-            if (ValidRefresh)
+            if (RefMatchesUser && !RefIsExpired)
             { // Refresh
                 Auth.PrevRef = Auth.Refresh;
-                Auth.Refresh = GenerateRefreshPayload(UserID);
+                RefreshToken = SignToken(GenerateRefreshPayload(UserID));
+                Auth.Refresh = RefreshToken.Split('.')[2];
             }
             else
             { // Invalidate
@@ -110,13 +107,11 @@ namespace Kinnection
                 Auth.PrevRef = GenerateRandomString(64);
             }
 
-            return await Task.FromResult(
-                new Dictionary<string, string>()
-                {
-                    {"access", SignToken(Auth.Authorization)},
-                    {"refresh", SignToken(Auth.Refresh)}
-                }
-            );
+            if (SaveHeaders)
+            {
+                httpContext.Response.Headers.Authorization = SignToken(Auth.Authorization);
+                httpContext.Response.Headers["X-Refresh-Token"] = SignToken(Auth.Refresh);
+            }
         }
 
         /// <summary>
@@ -125,8 +120,10 @@ namespace Kinnection
         /// <param name="Hash"></param>
         /// <param name="PlainText"></param>
         /// <returns></returns>
-        public static bool CheckHashEquivalence(string Hash, string PlainText)
+        public static bool CheckPasswordEquivalence(string Hash, string PlainText)
         {
+            // TO DO: Use slower hash for better password management;
+            //  separate out to PasswordManager module
             using var HMAC = new HMACSHA256(KEY);
             return CryptographicOperations.FixedTimeEquals(
                 HMAC.ComputeHash(Encoding.UTF8.GetBytes(PlainText)),
@@ -181,8 +178,9 @@ namespace Kinnection
         }
 
         /// <summary>
-        /// Returns a new randomly generated Session ID.
+        /// Returns a new randomly generated string with specified length.
         /// </summary>
+        /// <param name="length"></param>
         /// <returns></returns>
         private static string GenerateRandomString(int length = 24)
         {
@@ -201,39 +199,14 @@ namespace Kinnection
         /// <summary>
         /// Returns true if token is not expired, otherwise false
         /// </summary>
-        /// <param name="Token"></param>
+        /// <param name="ExpirationTime"></param>
         /// <returns></returns>
-        private static bool IsExpired(string Token)
+        private static bool IsExpired(DateTimeOffset ExpirationTime)
         {
-            Dictionary<string, string> ParsedToken;
-            try
-            {
-                ParsedToken = JsonSerializer.Deserialize<Dictionary<string, string>>(Token)!;
-            }
-            catch (JsonException)
-            {
-                throw new AuthenticationException("Invalid token.");
-            }
-
             return DateTimeOffset.Compare(
-                    DateTimeOffset.FromUnixTimeSeconds(
-                        Convert.ToInt64(ParsedToken!["exp"])
-                    ),
-                    DateTimeOffset.UtcNow
-                ) <= 0;
-        }
-
-
-        private static bool IsPreviousRefresh(string Refresh, string PrevRefPayload)
-        {
-            string[] TokenParts = Refresh.Split('.');
-            if (TokenParts.Length != 3) return false;
-
-            string DecodedPayload = Base64UrlEncoder.Decode(TokenParts[1]);
-            return CryptographicOperations.FixedTimeEquals(
-                Encoding.UTF8.GetBytes(DecodedPayload),
-                Encoding.UTF8.GetBytes(PrevRefPayload)
-            );
+                ExpirationTime,
+                DateTimeOffset.UtcNow
+            ) <= 0;
         }
 
         /// <summary>

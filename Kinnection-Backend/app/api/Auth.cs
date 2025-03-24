@@ -24,8 +24,9 @@ namespace Kinnection
 
                     if (ExistingPass != null)
                     {
-                        Console.WriteLine("User exists, but no associated password object also exists.");
-                        throw new Exception();
+                        string Message = $"User {ExistingUser.ID} exists, but no associated password object also exists. Please contact support.";
+                        Console.WriteLine(Message);
+                        throw new Exception(Message);
                     }
 
                     // Check password is correct
@@ -36,16 +37,17 @@ namespace Kinnection
 
                     string Password = KeyMaster.Decrypt(Request.Password, PrivateKey);
 
-                    if (!Authenticator.CheckHashEquivalence(ExistingPass!.PassString, Password))
-                    {
-                        throw new InvalidCredentialException("The email and password combination used is invalid.");
-                    }
+                    // TO DO: Build separate password manager module
+                    // if (!Authenticator.CheckHashEquivalence(ExistingPass!.PassString, Password))
+                    // {
+                    //     throw new InvalidCredentialException("The email/password combination used is invalid.");
+                    // }
 
                     // Compile Response
                     var Tokens = await Authenticator.Provision(ExistingUser.ID);
                     httpContext.Response.Headers.Authorization = $"Bearer {Tokens["access"]}";
                     httpContext.Response.Headers["X-Refresh-Token"] = Tokens["refresh"];
-                    return Results.Ok(new LoginResponse { ID = ExistingUser.ID });
+                    return Results.NoContent();
                 }
                 catch (InvalidCredentialException c)
                 {
@@ -73,14 +75,14 @@ namespace Kinnection
             .WithOpenApi();
 
 
-            app.MapPost("/auth/logout/{id}", async (int id, HttpContext httpContext) =>
+            app.MapPost("/auth/logout/", async (HttpContext httpContext) =>
             {
                 try
                 {
                     using var Context = DatabaseManager.GetActiveContext();
 
                     // Authenticate User
-                    await Authenticator.Authenticate(Context, httpContext, id, false);
+                    await Authenticator.Authenticate(Context, httpContext, false);
 
                     return Results.NoContent();
                 }
@@ -110,20 +112,13 @@ namespace Kinnection
             .WithOpenApi();
 
 
-            app.MapGet("/auth/public/", async (HttpContext httpContext) =>
+            app.MapGet("/auth/public/", (HttpContext httpContext) =>
             {
                 try
                 {
-                    // Get the public key
-                    string Public = Environment.GetEnvironmentVariable("Public")!;
-                    if (Public == null)
-                    {
-                        using var Context = DatabaseManager.GetActiveContext();
-                        Public = (await Context.EncryptionKeys.FirstOrDefaultAsync())!.Public;
-                        Environment.SetEnvironmentVariable("Public", Public, EnvironmentVariableTarget.Machine);
-                    }
+                    var Keys = KeyMaster.SearchKeys();
 
-                    httpContext.Response.Headers["X-Public"] = Public;
+                    httpContext.Response.Headers["X-Public"] = Keys.Public;
                     return Results.NoContent();
                 }
                 catch (Exception e)
@@ -136,16 +131,16 @@ namespace Kinnection
             .WithOpenApi();
             
             
-            app.MapPost("/auth/verify/{id}", async (int id, HttpContext httpContext) =>
+            app.MapPost("/auth/verify/", async (HttpContext httpContext) =>
             {
                 try
                 {
                     using var Context = DatabaseManager.GetActiveContext();
 
                     // Authenticate User
-                    await Authenticator.Authenticate(Context, httpContext, id);
+                    await Authenticator.Authenticate(Context, httpContext);
 
-                    return Results.Ok(new VerifyResponse { ID = id });
+                    return Results.NoContent();
                 }
                 catch (AuthenticationException a)
                 {

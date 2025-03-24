@@ -1,39 +1,84 @@
-using System.Text;
-using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Authentication;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace Kinnection
 {
+    public record Keys
+    (
+        string Public,
+        string Private
+    );
+
     public static class KeyMaster
     {
         /// <summary>
-        /// Used for signing JWTs
-        /// </summary>
-        private static readonly byte[] EncryptionKey = Convert.FromBase64String(Environment.GetEnvironmentVariable("encrypt")!);
-
-        /// <summary>
-        /// Generates and returns a Dictionary containing "private" and "public" encryption keys.
+        /// Generates and returns a Keys record.
         /// </summary>
         /// <returns></returns>
-        public static Dictionary<string, string> GenerateKeys(
-            int keySizeInBits = 2048)
+        private static Keys GenerateKeys()
         {
-            using RSA rsa = RSA.Create(keySizeInBits);
-            return new Dictionary<string, string>
-            {
-                ["public"] = Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo()),
-                ["private"] = Convert.ToBase64String(rsa.ExportPkcs8PrivateKey())
-            };
+            using RSA rsa = RSA.Create(2048);
+            return new Keys
+            (
+                Convert.ToBase64String(rsa.ExportSubjectPublicKeyInfo()),
+                Convert.ToBase64String(rsa.ExportPkcs8PrivateKey())
+            );
         }
 
         /// <summary>
-        /// Sets environment variables corresponding with the key-value pairs in the Keys dictionary.
+        /// Returns a Keys record.
         /// </summary>
-        /// <param name="Keys"></param>
-        public static void SetKeys(string Public, string Private)
+        /// <param name="Context"></param>
+        /// <returns>Keys</returns>
+        public static Keys SearchKeys()
         {
-            Environment.SetEnvironmentVariable("public", Public, EnvironmentVariableTarget.Machine);
-            Environment.SetEnvironmentVariable("private", Private, EnvironmentVariableTarget.Machine);
+            // Try getting the keys from the environment
+            var Keys = new Keys
+            (
+                Environment.GetEnvironmentVariable("public")!,
+                Environment.GetEnvironmentVariable("private")!
+            );
+
+            if (string.IsNullOrEmpty(Keys.Public) || string.IsNullOrEmpty(Keys.Private))
+            {
+                // Keys need to be obtained from the DB
+                using var Context = DatabaseManager.GetActiveContext();
+                try
+                {
+                    Encryption EncryptionKeys = Context.EncryptionKeys
+                        .OrderByDescending(e => e.Created)
+                        .First();
+
+                    // Keys have been created
+                    Keys = new Keys
+                    (
+                        EncryptionKeys.Public,
+                        EncryptionKeys.Private
+                    );
+                }
+                catch (Exception)
+                {
+                    // Keys have not been created yet
+                    Keys = GenerateKeys();
+                    Context.Add(new Encryption
+                    {
+                        Created = DateTime.UtcNow,
+                        Public = Keys.Public,
+                        Private = Keys.Private
+                    });
+                    Context.SaveChanges();
+                    Console.WriteLine("New encryption keys have been created.");
+                }
+
+                // Keys have been obtained, save them
+                Environment.SetEnvironmentVariable("public", Keys.Public, EnvironmentVariableTarget.Machine);
+                Environment.SetEnvironmentVariable("private", Keys.Private, EnvironmentVariableTarget.Machine);
+            }
+
+            return Keys;
         }
 
         /// <summary>
@@ -93,14 +138,60 @@ namespace Kinnection
             byte[] EncodedMessage = Encoding.UTF8.GetBytes($"{TokenParts[0]}.{TokenParts[1]}");
             byte[] DecodedSignature = Base64UrlEncoder.DecodeBytes(TokenParts[2]);
 
+            return VerifySigning(EncodedMessage, DecodedSignature, PublicKey);
+        }
+
+        /// <summary>
+        /// Returns true if signature hashes are the same, false otherwise
+        /// </summary>
+        /// <param name="Hash1"></param>
+        /// <param name="Hash2"></param>
+        /// <param name="PublicKey"></param>
+        /// <returns></returns>
+        public static bool VerifySigning(byte[] Hash1, byte[] Hash2, string PublicKey)
+        {
             using RSA rsa = RSA.Create();
             rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(PublicKey), out _);
 
             return rsa.VerifyData(
-                EncodedMessage, 
-                DecodedSignature, 
-                HashAlgorithmName.SHA256, 
+                Hash1,
+                Hash2,
+                HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1);
+        }
+
+        /// <summary>
+        /// Returns the verified token in a Dictionary with keys of "header", "payload", and "signature"
+        /// </summary>
+        /// <param name="Token"></param>
+        /// <param name="PublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="AuthenticationException"></exception>
+        public static Dictionary<string, Dictionary<string, string>> ProcessToken(
+            string Token,
+            string PublicKey)
+        {
+            if (!VerifyToken(Token, PublicKey))
+                throw new AuthenticationException("Token has been tampered.");
+
+            string[] TokenParts = Token.Split('.');
+            if (TokenParts.Length != 3)
+                throw new AuthenticationException("Invalid token format.");
+
+            try
+            {
+                string DecodedHeader = Base64UrlEncoder.Decode(TokenParts[0]);
+                string DecodedPayload = Base64UrlEncoder.Decode(TokenParts[1]);
+                string DecodedSignature = Base64UrlEncoder.Decode(TokenParts[2]);
+                return new Dictionary<string, Dictionary<string, string>>
+                {
+                    ["header"] = JsonSerializer.Deserialize<Dictionary<string, string>>(DecodedHeader)!,
+                    ["payload"] = JsonSerializer.Deserialize<Dictionary<string, string>>(DecodedPayload)!,
+                    ["signature"] = JsonSerializer.Deserialize<Dictionary<string, string>>(
+                        $"{{\"signature\":\"{DecodedSignature}\"}}")!
+                };
+            }
+            catch (JsonException) { throw new AuthenticationException("Invalid token format."); }
         }
     }
 }

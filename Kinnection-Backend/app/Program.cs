@@ -33,44 +33,16 @@ class Program
     // Migrate
     if (Environment.GetEnvironmentVariable("APPLY_MIGRATIONS") == "1")
     {
-      using (var scope = app.Services.CreateScope())
-      {
-        var services = scope.ServiceProvider;
+      using var scope = app.Services.CreateScope();
 
-        var MigrationContext = services.GetRequiredService<KinnectionContext>();
+      var MigrationContext = scope.ServiceProvider.GetRequiredService<KinnectionContext>();
 
-        if (MigrationContext.Database.GetPendingMigrations().Any())
-        {
-          MigrationContext.Database.Migrate();
-        }
-      }
+      if (MigrationContext.Database.GetPendingMigrations().Any())
+        MigrationContext.Database.Migrate();
     }
 
     // Ensure encryption keys exist
-    Encryption? EncryptionKeys;
-    try
-    {
-      EncryptionKeys = Context.EncryptionKeys
-        .OrderByDescending(e => e.Created)
-        .FirstOrDefault();
-    } finally { }
-    
-    if (null == EncryptionKeys)
-    {
-      var Keys = KeyMaster.GenerateKeys();
-      EncryptionKeys = new Encryption
-      {
-        Created = DateTime.UtcNow,
-        Public = Keys["public"],
-        Private = Keys["private"]
-      };
-
-      Context.Add(EncryptionKeys);
-      Context.SaveChanges();
-      Console.WriteLine("New encryption keys have been created.");
-    }
-
-    KeyMaster.SetKeys(EncryptionKeys.Public, EncryptionKeys.Private);
+    KeyMaster.SearchKeys();
 
     // Start APIs
     UserAPIs.APIs(app);

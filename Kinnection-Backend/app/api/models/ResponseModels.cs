@@ -1,16 +1,5 @@
 namespace Kinnection
 {
-    // Auth
-    public class LoginResponse : IID
-    {
-        public int ID { get; set; }
-    }
-
-    public class VerifyResponse : IID
-    {
-        public int ID { get; set; }
-    }
-
     // Trees
     public class GetTreesResponse
     {
