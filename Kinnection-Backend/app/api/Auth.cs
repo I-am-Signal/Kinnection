@@ -1,171 +1,171 @@
 using System.Security.Authentication;
-using Microsoft.EntityFrameworkCore;
 
-namespace Kinnection
+namespace Kinnection;
+static class AuthAPIs
 {
-    static class AuthAPIs
+    public static void APIs(WebApplication app)
     {
-        public static void APIs(WebApplication app)
+        app.MapPost("/auth/login", (HttpContext httpContext, LoginRequest Request) =>
         {
-            app.MapPost("/auth/login", async (HttpContext httpContext, LoginRequest Request) =>
+            try
             {
-                try
+                var EncryptionKeys = KeyMaster.GetKeys();
+                using var Context = DatabaseManager.GetActiveContext();
+
+                // Ensure user exists
+                var ExistingUser = Context.Users
+                    .FirstOrDefault(b => b.Email == Request.Email) ??
+                        throw new KeyNotFoundException(
+                            $"A user with email {Request.Email} does not exist.");
+
+                // Ensure user's password exists
+                var ExistingPass = Context.Passwords
+                    .OrderByDescending(p => p.Created)
+                    .FirstOrDefault(p => p.UserID == ExistingUser!.ID) ??
+                        throw new ApplicationException(
+                            $"User {ExistingUser.ID} exists, but no associated password object also exists. Please contact support.");
+
+                // Check password is correct
+                bool ValidPass = PassForge.IsPassCorrect(
+                    KeyMaster.Decrypt(Request.Password, EncryptionKeys.Private), ExistingUser.ID);
+
+                if (!ValidPass)
                 {
-                    // Ensure user exists
-                    using var context = DatabaseManager.GetActiveContext();
-                    var ExistingUser = await context.Users
-                        .FirstOrDefaultAsync(b => b.Email == Request.Email) ?? 
-                            throw new KeyNotFoundException($"A user with email {Request.Email} does not exist.");
-
-                    // Ensure user's password exists
-                    var ExistingPass = await context.Passwords
-                        .OrderByDescending(p => p.Created)
-                        .FirstOrDefaultAsync(p => p.UserID == ExistingUser!.ID);
-
-                    if (ExistingPass != null)
-                    {
-                        string Message = $"User {ExistingUser.ID} exists, but no associated password object also exists. Please contact support.";
-                        Console.WriteLine(Message);
-                        throw new Exception(Message);
-                    }
-
-                    // Check password is correct
-                    string PrivateKey = (await context.EncryptionKeys
-                        .OrderByDescending(b => b.Created)
-                        .FirstOrDefaultAsync()
-                        ?? throw new Exception()).Private;
-
-                    string Password = KeyMaster.Decrypt(Request.Password, PrivateKey);
-
-                    // TO DO: Build separate password manager module
-                    // if (!Authenticator.CheckHashEquivalence(ExistingPass!.PassString, Password))
-                    // {
-                    //     throw new InvalidCredentialException("The email/password combination used is invalid.");
-                    // }
-
-                    // Compile Response
-                    var Tokens = await Authenticator.Provision(ExistingUser.ID);
-                    httpContext.Response.Headers.Authorization = $"Bearer {Tokens["access"]}";
-                    httpContext.Response.Headers["X-Refresh-Token"] = Tokens["refresh"];
-                    return Results.NoContent();
+                    throw new InvalidCredentialException(
+                        "The email/password combination used is invalid.");
                 }
-                catch (InvalidCredentialException c)
-                {
-                    Console.WriteLine(c);
-                    return Results.Problem(
-                        detail: c.Message,
-                        statusCode: 401
-                    );
-                }
-                catch (KeyNotFoundException k)
-                {
-                    Console.WriteLine(k);
-                    return Results.Problem(
-                        detail: k.Message,
-                        statusCode: 404
-                    );
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    return Results.Problem(statusCode: 500);
-                }
-            })
-            .WithName("PostLogin")
-            .WithOpenApi();
 
-
-            app.MapPost("/auth/logout/", async (HttpContext httpContext) =>
+                // Compile Response
+                Authenticator.Provision(ExistingUser.ID, httpContext);
+                return Results.NoContent();
+            }
+            catch (InvalidCredentialException c)
             {
-                try
-                {
-                    using var Context = DatabaseManager.GetActiveContext();
-
-                    // Authenticate User
-                    await Authenticator.Authenticate(Context, httpContext, false);
-
-                    return Results.NoContent();
-                }
-                catch (AuthenticationException a)
-                {
-                    Console.WriteLine(a);
-                    return Results.Problem(
-                        detail: a.Message,
-                        statusCode: 401
-                    );
-                }
-                catch (KeyNotFoundException k)
-                {
-                    Console.WriteLine(k);
-                    return Results.Problem(
-                        detail: k.Message,
-                        statusCode: 404
-                    );
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    return Results.Problem(statusCode: 500);
-                }
-            })
-            .WithName("PostLogout")
-            .WithOpenApi();
-
-
-            app.MapGet("/auth/public/", (HttpContext httpContext) =>
+                Console.WriteLine(c);
+                return Results.Problem(
+                    detail: c.Message,
+                    statusCode: 401);
+            }
+            catch (KeyNotFoundException k)
             {
-                try
-                {
-                    var Keys = KeyMaster.SearchKeys();
-
-                    httpContext.Response.Headers["X-Public"] = Keys.Public;
-                    return Results.NoContent();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    return Results.Problem(statusCode: 500);
-                }
-            })
-            .WithName("GetPublic")
-            .WithOpenApi();
-            
-            
-            app.MapPost("/auth/verify/", async (HttpContext httpContext) =>
+                Console.WriteLine(k);
+                return Results.Problem(
+                    detail: k.Message,
+                    statusCode: 404);
+            }
+            catch (ApplicationException a)
             {
-                try
-                {
-                    using var Context = DatabaseManager.GetActiveContext();
+                Console.WriteLine(a);
+                return Results.Problem(
+                    detail: a.Message,
+                    statusCode: 500);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Results.Problem(
+                    statusCode: 500);
+            }
+        })
+        .WithName("PostLogin")
+        .WithOpenApi();
 
-                    // Authenticate User
-                    await Authenticator.Authenticate(Context, httpContext);
 
-                    return Results.NoContent();
-                }
-                catch (AuthenticationException a)
+        app.MapPost("/auth/logout/", (HttpContext httpContext) =>
+        {
+            try
+            {
+                using var Context = DatabaseManager.GetActiveContext();
+
+                // Authenticate User
+                var Tokens = new Dictionary<string, string>()
                 {
-                    Console.WriteLine(a);
-                    return Results.Problem(
-                        detail: a.Message,
-                        statusCode: 401
-                    );
-                }
-                catch (KeyNotFoundException k)
-                {
-                    Console.WriteLine(k);
-                    return Results.Problem(
-                        detail: k.Message,
-                        statusCode: 404
-                    );
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    return Results.Problem(statusCode: 500);
-                }
-            })
-            .WithName("PostLogout")
-            .WithOpenApi();
-        }
+                    ["access"] = httpContext.Request.Headers.Authorization!,
+                    ["refresh"] = httpContext.Request.Headers["X-Refresh-Token"]!
+                };
+                Authenticator.Authenticate(Context, Tokens: Tokens);
+
+                return Results.NoContent();
+            }
+            catch (AuthenticationException a)
+            {
+                Console.WriteLine(a);
+                return Results.Problem(
+                    detail: a.Message,
+                    statusCode: 401
+                );
+            }
+            catch (KeyNotFoundException k)
+            {
+                Console.WriteLine(k);
+                return Results.Problem(
+                    detail: k.Message,
+                    statusCode: 404
+                );
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Results.Problem(statusCode: 500);
+            }
+        })
+        .WithName("PostLogout")
+        .WithOpenApi();
+
+
+        app.MapGet("/auth/public/", (HttpContext httpContext) =>
+        {
+            try
+            {
+                var Keys = KeyMaster.GetKeys();
+
+                httpContext.Response.Headers["X-Public"] = Keys.Public;
+                return Results.NoContent();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Results.Problem(statusCode: 500);
+            }
+        })
+        .WithName("GetPublic")
+        .WithOpenApi();
+
+
+        app.MapPost("/auth/verify/", (HttpContext httpContext) =>
+        {
+            try
+            {
+                using var Context = DatabaseManager.GetActiveContext();
+
+                // Authenticate User
+                Authenticator.Authenticate(Context, httpContext: httpContext);
+
+                return Results.NoContent();
+            }
+            catch (AuthenticationException a)
+            {
+                Console.WriteLine(a);
+                return Results.Problem(
+                    detail: a.Message,
+                    statusCode: 401
+                );
+            }
+            catch (KeyNotFoundException k)
+            {
+                Console.WriteLine(k);
+                return Results.Problem(
+                    detail: k.Message,
+                    statusCode: 404
+                );
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Results.Problem(statusCode: 500);
+            }
+        })
+        .WithName("PostVerify")
+        .WithOpenApi();
     }
 }

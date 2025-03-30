@@ -15,6 +15,9 @@ class Program
 
     builder.Services.AddSwaggerGen();
 
+    if (builder.Environment.IsDevelopment())
+      builder.Logging.AddConsole();
+
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
@@ -42,10 +45,11 @@ class Program
     }
 
     // Ensure encryption keys exist
-    KeyMaster.SearchKeys();
+    KeyMaster.GetKeys();
 
     // Start APIs
     UserAPIs.APIs(app);
+    AuthAPIs.APIs(app);
     app.Run();
   }
 }

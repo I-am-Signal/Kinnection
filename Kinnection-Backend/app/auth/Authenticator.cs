@@ -1,267 +1,362 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Kinnection
+namespace Kinnection;
+
+public static class Authenticator
 {
-    public static class Authenticator
+    private static readonly string EncodedHeader = Base64UrlEncoder.Encode(
+        "{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
+    private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER") +
+        ':' + Environment.GetEnvironmentVariable("ASP_PORT");
+
+    /// <summary>
+    /// Authenticates access and refresh tokens. 
+    /// Places refreshed tokens into httpContext if it's provided.
+    /// </summary>
+    /// <param name="Context"></param>
+    /// <param name="httpContext"></param>
+    /// <param name="Tokens"></param>
+    /// <returns>Dictionary with "access" and "refresh" tokens</returns>
+    /// <exception cref="AuthenticationException"></exception>
+    /// <exception cref="KeyNotFoundException"></exception>
+    public static Dictionary<string, string> Authenticate(
+        KinnectionContext Context,
+        Dictionary<string, string>? Tokens = null,
+        HttpContext? httpContext = null
+        )
     {
-        private static readonly string EncodedHeader = Base64UrlEncoder.Encode(
-            "{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
-        private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER") +
-                Environment.GetEnvironmentVariable("ASP_PORT");
-        private static readonly byte[] KEY = Encoding.UTF8.GetBytes(
-            Environment.GetEnvironmentVariable("KEY")!);
+        var Keys = KeyMaster.GetKeys();
 
-        /// <summary>
-        /// Authenticates and places refreshed tokens into the HttpContext if SaveHeaders is true.
-        /// </summary>
-        /// <param name="httpContext"></param>
-        /// <param name="UserID"></param>
-        /// <param name="SaveHeaders"></param>
-        /// <exception cref="KeyNotFoundException"></exception>
-        /// <exception cref="AuthenticationException"></exception>
-        public static async Task Authenticate(
-            KinnectionContext Context,
-            HttpContext httpContext,
-            bool SaveHeaders = true)
+        string RawAccess, RawRefresh;
+        // Process and verify tokens
+        if (httpContext != null)
         {
-            var Keys = KeyMaster.SearchKeys();
+            RawAccess = httpContext.Request.Headers.Authorization!.ToString().Split(" ")[1];
+            RawRefresh = httpContext.Request.Headers["X-Refresh-Token"]!;
+        }
+        else if (Tokens != null)
+        {
+            RawAccess = Tokens["access"];
+            RawRefresh = Tokens["refresh"];
+        }
+        else throw new AuthenticationException("No tokens provided for authentication!");
 
-            // Process and verify tokens
-            var Access = KeyMaster.ProcessToken(httpContext.Request.Headers.Authorization!, Keys.Public);
-            var Refresh = KeyMaster.ProcessToken(httpContext.Request.Headers["X-Refresh-Token"]!, Keys.Public);
+        var Access = ProcessToken(RawAccess);
+        var Refresh = ProcessToken(RawRefresh);
 
-            string AccessUser = Access["payload"]["sub"];
-            string RefreshUser = Refresh["payload"]["sub"];
+        int UserID = Access["payload"]["sub"].GetInt32();
+        int RefreshUserID = Refresh["payload"]["sub"].GetInt32();
 
-            if (AccessUser != RefreshUser)
-                throw new AuthenticationException("Tokens do not match.");
+        if (UserID != RefreshUserID)
+            throw new AuthenticationException("Tokens do not match.");
 
-            int UserID = Convert.ToInt32(AccessUser);
+        var Auth = Context.Authentications.FirstOrDefault(b => b.UserID == UserID)
+            ?? throw new KeyNotFoundException($"User with ID {UserID} is not logged in.");
 
-            var Auth = await Context.Authentications.FirstOrDefaultAsync(b => b.UserID == UserID)
-                ?? throw new KeyNotFoundException($"User with ID {UserID} is not logged in.");
+        // Verify access token matches user
+        if (!IsEqual(
+            Access["signature"]["signature"].GetString()!,
+            Auth.Authorization)
+        ) throw new AuthenticationException("Access denied.");
 
-            // Verify access token matches user
-            if (!KeyMaster.VerifySigning(
-                Base64UrlEncoder.DecodeBytes(Access["signature"]["signature"]),
-                Base64UrlEncoder.DecodeBytes(Auth.Authorization),
-                Keys.Public)
-            ) throw new AuthenticationException("Access denied.");
+        // Verify refresh token is not previous refresh token
+        if (IsEqual(
+            Refresh["signature"]["signature"].GetString()!,
+            Auth.PrevRef))
+        {
+            // Invalidate the tokens, unauthorized access attempt occurred
+            Auth.Authorization = GenerateRandomString(64);
+            Auth.Refresh = GenerateRandomString(64);
+            Auth.PrevRef = GenerateRandomString(64);
+            throw new AuthenticationException("Access denied.");
+        }
 
-            // Verify refresh token is not previous refresh token
-            if (KeyMaster.VerifySigning(
-                Base64UrlEncoder.DecodeBytes(Refresh["signature"]["signature"]),
-                Base64UrlEncoder.DecodeBytes(Auth.PrevRef),
-                Keys.Public))
+        bool RefMatchesUser = IsEqual(
+            Refresh["signature"]["signature"].GetString()!,
+            Auth.Refresh);
+
+        bool RefIsExpired = IsExpired(
+            DateTimeOffset.FromUnixTimeSeconds(
+                Convert.ToInt64(Refresh["payload"]["exp"].GetInt64())
+            ));
+
+        bool AccIsExpired = IsExpired(
+            DateTimeOffset.FromUnixTimeSeconds(
+                Convert.ToInt64(Access["payload"]["exp"].GetInt64())
+            )
+        );
+
+        string AccessToken = "";
+        string RefreshToken = "";
+
+        // Verify access token is valid
+        if (AccIsExpired)
+        {
+            if (!RefMatchesUser || RefIsExpired)
+                throw new AuthenticationException("Re-authentication required.");
+            AccessToken = SignToken(GenerateAccessPayload(UserID));
+            Auth.Authorization = AccessToken.Split('.')[2];
+        }
+
+        // Verify refresh token is valid and unexpired
+        if (RefMatchesUser && !RefIsExpired)
+        { // Refresh
+            Auth.PrevRef = Auth.Refresh;
+            RefreshToken = SignToken(GenerateRefreshPayload(UserID));
+            Auth.Refresh = RefreshToken.Split('.')[2];
+        }
+        else
+        { // Invalidate
+            Auth.Refresh = GenerateRandomString(64);
+            Auth.PrevRef = GenerateRandomString(64);
+        }
+
+        if (httpContext != null)
+        {
+            httpContext.Response.Headers.Authorization = $"Bearer {SignToken(Auth.Authorization)}";
+            httpContext.Response.Headers["X-Refresh-Token"] = SignToken(Auth.Refresh);
+        }
+
+        return new Dictionary<string, string>
+        {
+            ["access"] = AccessToken,
+            ["refresh"] = RefreshToken
+        };
+    }
+
+    /// <summary>
+    /// Returns true if strings are equal (in a cryptographically fixed time), false otherwise.
+    /// </summary>
+    /// <param name="String1"></param>
+    /// <param name="String2"></param>
+    /// <returns></returns>
+    public static bool IsEqual(string String1, string String2)
+    {
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(String1),
+            Encoding.UTF8.GetBytes(String2));
+    }
+
+    /// <summary>
+    /// Returns true if token is not expired, otherwise false
+    /// </summary>
+    /// <param name="ExpirationTime"></param>
+    /// <returns></returns>
+    private static bool IsExpired(DateTimeOffset ExpirationTime)
+    {
+        return DateTimeOffset.Compare(
+            ExpirationTime,
+            DateTimeOffset.UtcNow
+        ) <= 0;
+    }
+
+    /// <summary>
+    /// Returns a new Access Token Payload for user of UserID.
+    /// </summary>
+    /// <param name="UserID"></param>
+    /// <returns></returns>
+    private static string GenerateAccessPayload(int UserID)
+    {
+        long IssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        long ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(
+                Convert.ToDouble(Environment.GetEnvironmentVariable("ACCESS_DURATION"))
+            ).ToUnixTimeSeconds();
+
+        return JsonSerializer.Serialize(
+            new
             {
-                // Invalidate the tokens, unauthorized access attempt occurred
-                Auth.Authorization = GenerateRandomString(64);
-                Auth.Refresh = GenerateRandomString(64);
-                Auth.PrevRef = GenerateRandomString(64);
-                throw new AuthenticationException("Access denied.");
-            }
+                iss = ISSUER,
+                sub = UserID,
+                exp = ExpiresAt,
+                iat = IssuedAt
+            });
+    }
 
-            bool RefMatchesUser = KeyMaster.VerifySigning(
-                Base64UrlEncoder.DecodeBytes(Refresh["signature"]["signature"]),
-                Base64UrlEncoder.DecodeBytes(Auth.Refresh),
-                Keys.Public);
+    /// <summary>
+    /// Returns a new Refresh Token Payload for user of UserID.
+    /// </summary>
+    /// <param name="UserID"></param>
+    /// <returns></returns>
+    private static string GenerateRefreshPayload(int UserID)
+    {
+        long IssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        long ExpiresAt = DateTimeOffset.UtcNow.AddDays(
+                Convert.ToDouble(Environment.GetEnvironmentVariable("REFRESH_DURATION"))
+            ).ToUnixTimeSeconds();
+        string SessionID = GenerateRandomString();
 
-            bool RefIsExpired = IsExpired(
-                DateTimeOffset.FromUnixTimeSeconds(
-                    Convert.ToInt64(Refresh["payload"]["exp"])
-                ));
-
-            bool AccIsExpired = IsExpired(
-                DateTimeOffset.FromUnixTimeSeconds(
-                    Convert.ToInt64(Access["payload"]["exp"])
-                )
-            );
-
-            string AccessToken = "";
-            string RefreshToken = "";
-
-            // Verify access token is valid
-            if (AccIsExpired)
+        return JsonSerializer.Serialize(
+            new
             {
-                if (!RefMatchesUser || RefIsExpired)
-                    throw new AuthenticationException("Re-authentication required.");
-                AccessToken = SignToken(GenerateAccessPayload(UserID));
-                Auth.Authorization = AccessToken.Split('.')[2];
-            }
+                iss = ISSUER,
+                sub = UserID,
+                exp = ExpiresAt,
+                iat = IssuedAt,
+                sid = SessionID
+            });
+    }
 
-            // Verify refresh token is valid and unexpired
-            if (RefMatchesUser && !RefIsExpired)
-            { // Refresh
-                Auth.PrevRef = Auth.Refresh;
-                RefreshToken = SignToken(GenerateRefreshPayload(UserID));
-                Auth.Refresh = RefreshToken.Split('.')[2];
-            }
-            else
-            { // Invalidate
-                Auth.Refresh = GenerateRandomString(64);
-                Auth.PrevRef = GenerateRandomString(64);
-            }
-
-            if (SaveHeaders)
-            {
-                httpContext.Response.Headers.Authorization = SignToken(Auth.Authorization);
-                httpContext.Response.Headers["X-Refresh-Token"] = SignToken(Auth.Refresh);
-            }
-        }
-
-        /// <summary>
-        /// Returns true if PlainText, when hashed, is equivalent to the Hash parameter.
-        /// </summary>
-        /// <param name="Hash"></param>
-        /// <param name="PlainText"></param>
-        /// <returns></returns>
-        public static bool CheckPasswordEquivalence(string Hash, string PlainText)
-        {
-            // TO DO: Use slower hash for better password management;
-            //  separate out to PasswordManager module
-            using var HMAC = new HMACSHA256(KEY);
-            return CryptographicOperations.FixedTimeEquals(
-                HMAC.ComputeHash(Encoding.UTF8.GetBytes(PlainText)),
-                Encoding.UTF8.GetBytes(Hash)
-            );
-        }
-
-        /// <summary>
-        /// Returns a new Access Token Payload for user of UserID.
-        /// </summary>
-        /// <param name="UserID"></param>
-        /// <returns></returns>
-        private static string GenerateAccessPayload(int UserID)
-        {
-            long IssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            long ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(
-                    Convert.ToDouble(Environment.GetEnvironmentVariable("ACCESS_DURATION"))
-                ).ToUnixTimeSeconds();
-
-            return JsonSerializer.Serialize(
-                new
-                {
-                    iss = ISSUER,
-                    sub = UserID,
-                    exp = ExpiresAt,
-                    iat = IssuedAt
-                });
-        }
-
-        /// <summary>
-        /// Returns a new Refresh Token Payload for user of UserID.
-        /// </summary>
-        /// <param name="UserID"></param>
-        /// <returns></returns>
-        private static string GenerateRefreshPayload(int UserID)
-        {
-            long IssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            long ExpiresAt = DateTimeOffset.UtcNow.AddDays(
-                    Convert.ToDouble(Environment.GetEnvironmentVariable("REFRESH_DURATION"))
-                ).ToUnixTimeSeconds();
-            string SessionID = GenerateRandomString();
-
-            return JsonSerializer.Serialize(
-                new
-                {
-                    iss = ISSUER,
-                    sub = UserID,
-                    exp = ExpiresAt,
-                    iat = IssuedAt,
-                    sid = SessionID
-                });
-        }
-
-        /// <summary>
-        /// Returns a new randomly generated string with specified length.
-        /// </summary>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        private static string GenerateRandomString(int length = 24)
-        {
-            return RandomNumberGenerator.GetString(
-                [
-                    'A','B','C','D','E','F','G','H','I','J','K','L','M',
+    /// <summary>
+    /// Returns a new randomly generated string with specified length.
+    /// </summary>
+    /// <param name="length"></param>
+    /// <returns></returns>
+    private static string GenerateRandomString(int length = 24)
+    {
+        return RandomNumberGenerator.GetString(
+            [
+                'A','B','C','D','E','F','G','H','I','J','K','L','M',
                     'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                     'a','b','c','d','e','f','g','h','i','j','k','l','m',
                     'n','o','p','q','r','s','t','u','v','w','x','y','z',
                     '0','1','2','3','4','5','6','7','8','9','#','@','$'
-                ],
-                length
-            );
-        }
+            ],
+            length
+        );
+    }
 
-        /// <summary>
-        /// Returns true if token is not expired, otherwise false
-        /// </summary>
-        /// <param name="ExpirationTime"></param>
-        /// <returns></returns>
-        private static bool IsExpired(DateTimeOffset ExpirationTime)
+    /// <summary>
+    /// Returns the verified token in a Dictionary with keys of "header", "payload", and "signature"
+    /// </summary>
+    /// <param name="Token"></param>
+    /// <param name="PublicKey"></param>
+    /// <returns></returns>
+    /// <exception cref="AuthenticationException"></exception>
+    public static Dictionary<string, Dictionary<string, JsonElement>> ProcessToken(
+        string Token)
+    {
+        if (!VerifyToken(Token))
+            throw new AuthenticationException("Token has been tampered.");
+
+        string[] TokenParts = Token.Split('.');
+        if (TokenParts.Length != 3)
+            throw new AuthenticationException("Invalid token format.");
+
+        try
         {
-            return DateTimeOffset.Compare(
-                ExpirationTime,
-                DateTimeOffset.UtcNow
-            ) <= 0;
-        }
+            string DecodedHeader = Base64UrlEncoder.Decode(TokenParts[0]);
+            string DecodedPayload = Base64UrlEncoder.Decode(TokenParts[1]);
+            string EncodedSignature = TokenParts[2]; // easier to use via decoding at arrival
 
-        /// <summary>
-        /// Provisions a new set of tokens to the user of UserID, accessible with keys "access" and "refresh".
-        /// Only use this function when a successful login occurs to issue a user brand new tokens.
-        /// </summary>
-        /// <param name="UserID"></param>
-        public static async Task<Dictionary<string, string>> Provision(int UserID)
-        {
-            using var Context = DatabaseManager.GetActiveContext();
-            var Auth = await Context.Authentications.FirstOrDefaultAsync(b => b.UserID == UserID);
-
-            string AccessPayload = GenerateAccessPayload(UserID);
-            string RefreshPayload = GenerateRefreshPayload(UserID);
-
-            if (Auth == null)
+            return new Dictionary<string, Dictionary<string, JsonElement>>
             {
-                Auth = new Authentication
-                {
-                    Created = DateTime.UtcNow,
-                    UserID = UserID,
-                    Authorization = AccessPayload,
-                    Refresh = RefreshPayload,
-                    PrevRef = ""
-                };
-                Context.Add(Auth);
-            }
-            else
-            {
-                Auth.Authorization = AccessPayload;
-                Auth.Refresh = RefreshPayload;
-            }
-
-            await Context.SaveChangesAsync();
-
-            var tokens = new Dictionary<string, string>
-            {
-                ["access"] = SignToken(Auth.Authorization),
-                ["refresh"] = SignToken(Auth.Refresh)
+                ["header"] = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedHeader)!,
+                ["payload"] = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedPayload)!,
+                ["signature"] = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                    JsonSerializer.Serialize(new { signature = EncodedSignature }))!
             };
-
-            return await Task.FromResult(tokens);
         }
-
-        /// <summary>
-        /// Returns the signed and encrypted token.
-        /// </summary>
-        /// <param name="Payload"></param>
-        /// <returns></returns>
-        private static string SignToken(string Payload)
+        catch (JsonException j)
         {
-            string PrivateKey = Environment.GetEnvironmentVariable("private")!;
-            string EncodedPayload = Base64UrlEncoder.Encode(Payload);
-            string EncryptedSignature = KeyMaster.Sign($"{EncodedHeader}.{EncodedPayload}", PrivateKey);
-            return $"{EncodedHeader}.{EncodedPayload}.{EncryptedSignature}";
+            Console.WriteLine(j);
+            throw new AuthenticationException("Invalid token format.");
         }
+    }
+
+    /// <summary>
+    /// Provisions a new set of tokens to the user of UserID, accessible with keys "access" and "refresh".
+    /// If provided an HttpContext, the tokens are saved to the Response headers.
+    /// Only use this function when a successful login occurs to issue a user brand new tokens. 
+    /// </summary>
+    /// <param name="UserID"></param>
+    /// <param name="httpContext"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static Dictionary<string, string> Provision(
+        int UserID,
+        HttpContext? httpContext = null)
+    {
+        using var Context = DatabaseManager.GetActiveContext();
+        var Auth = Context.Authentications.FirstOrDefault(b => b.UserID == UserID);
+
+        string AccessToken = SignToken(GenerateAccessPayload(UserID));
+        string RefreshToken = SignToken(GenerateAccessPayload(UserID));
+        string AccessHash = AccessToken.Split('.')[2];
+        string RefreshHash = AccessToken.Split('.')[2];
+
+        if (Auth == null)
+        {
+            Auth = new Authentication
+            {
+                Created = DateTime.UtcNow,
+                UserID = UserID,
+                Authorization = AccessHash,
+                Refresh = RefreshHash,
+                PrevRef = ""
+            };
+            Context.Add(Auth);
+        }
+        else
+        {
+            Auth.Authorization = AccessHash;
+            Auth.Refresh = RefreshHash;
+        }
+
+        Context.SaveChanges();
+
+        if (httpContext != null)
+        {
+            httpContext.Response.Headers.Authorization = $"Bearer {AccessToken}";
+            httpContext.Response.Headers["X-Refresh-Token"] = RefreshToken;
+        }
+
+        return new Dictionary<string, string>
+        {
+            ["access"] = AccessToken,
+            ["refresh"] = RefreshToken
+        };
+    }
+
+    /// <summary>
+    /// Returns the signed and encrypted token.
+    /// </summary>
+    /// <param name="Payload"></param>
+    /// <returns></returns>
+    private static string SignToken(string Payload)
+    {
+        // Encode token parts
+        string EncodedPayload = Base64UrlEncoder.Encode(Payload);
+
+        using RSA rsa = RSA.Create();
+        rsa.ImportPkcs8PrivateKey(Convert.FromBase64String(
+            KeyMaster.GetKeys().Private), out _);
+            
+        string EncryptedSignature = Base64UrlEncoder.Encode(rsa.SignData(
+            Encoding.UTF8.GetBytes($"{EncodedHeader}.{EncodedPayload}"),
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1));
+        
+        // Compile and return token
+        return $"{EncodedHeader}.{EncodedPayload}.{EncryptedSignature}";
+    }
+
+    /// <summary>
+    /// Verifies that the JWT is untampered.
+    /// </summary>
+    /// <param name="Token"></param>
+    /// <param name="PublicKey"></param>
+    /// <returns>Returns true if the signed JWT is untampered, false otherwise.</returns>
+    public static bool VerifyToken(string Token)
+    {
+        var Keys = KeyMaster.GetKeys();
+
+        string[] TokenParts = Token.Split('.');
+        if (TokenParts.Length != 3) return false;
+
+        byte[] EncodedMessage = Encoding.UTF8.GetBytes($"{TokenParts[0]}.{TokenParts[1]}");
+        byte[] DecodedSignature = Base64UrlEncoder.DecodeBytes(TokenParts[2]);
+
+        using RSA rsa = RSA.Create();
+        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(Keys.Public), out _);
+
+        return rsa.VerifyData(
+            EncodedMessage,
+            DecodedSignature,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1);
     }
 }

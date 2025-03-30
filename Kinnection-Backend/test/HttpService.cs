@@ -1,9 +1,23 @@
 using System.Text;
+
 namespace test;
 
 public static class HttpService
 {
     private static readonly HttpClient _client = new HttpClient();
+
+    private static HttpRequestMessage AddHeaders(
+        HttpRequestMessage Request,
+        Dictionary<string, string>? Headers)
+    {
+        if (Headers != null)
+        {
+            foreach (var header in Headers)
+                Request.Headers.Add(header.Key, header.Value);
+        }
+
+        return Request;
+    }
 
     private static string AppendArguments(
         string URI,
@@ -12,12 +26,15 @@ public static class HttpService
         if (Arguments == null)
             return URI;
 
-        StringBuilder URL = new StringBuilder(URI + "?");
+        StringBuilder URL = new StringBuilder();
+        URL.Append(URI + "?");
         for (int i = 0; i < Arguments.Count; i++)
         {
             string Argument = Arguments.ElementAt(i).Key;
             string Value = Arguments.ElementAt(i).Value;
             URL.Append($"{Argument}={Value}");
+            if (Arguments.Count > 1 && i < Arguments.Count - 1)
+                URL.Append('&');
         }
         return URL.ToString();
     }
@@ -25,7 +42,7 @@ public static class HttpService
     private static string JSONStringifyDictionary(
         Dictionary<string, string> Content)
     {
-        StringBuilder Output = new StringBuilder();
+        var Output = new StringBuilder();
         for (int i = 0; i < Content.Count; i++)
         {
             string Key = Content.ElementAt(i).Key;
@@ -39,47 +56,62 @@ public static class HttpService
 
     public static async Task<HttpResponseMessage> GetAsync(
         string URI,
-        Dictionary<string, string>? Arguments = null)
+        string Parameter = "",
+        Dictionary<string, string>? Arguments = null,
+        Dictionary<string, string>? Headers = null)
     {
-        return await _client.GetAsync(AppendArguments(URI, Arguments));
+        var Request = new HttpRequestMessage(
+            HttpMethod.Get,
+            AppendArguments(URI + Parameter, Arguments));
+
+        AddHeaders(Request, Headers);
+        return await _client.SendAsync(Request);
     }
 
     public static async Task<HttpResponseMessage> PostAsync(
         string URI,
-        Dictionary<string, string> Data,
+        Dictionary<string, string> Content,
         string ContentType = "application/json",
-        Dictionary<string, string>? Arguments = null)
+        string Parameter = "",
+        Dictionary<string, string>? Arguments = null,
+        Dictionary<string, string>? Headers = null)
     {
-        return await _client.PostAsync(
-            AppendArguments(URI, Arguments),
-            new StringContent(
-                JSONStringifyDictionary(Data),
-                Encoding.UTF8,
-                ContentType)
-        );
+        var Request = new HttpRequestMessage(
+            HttpMethod.Post,
+            AppendArguments(URI + Parameter, Arguments))
+        {
+            Content = new StringContent(JSONStringifyDictionary(Content), Encoding.UTF8, ContentType)
+        };
+        AddHeaders(Request, Headers);
+        return await _client.SendAsync(Request);
     }
 
     public static async Task<HttpResponseMessage> PutAsync(
         string URI,
-        Dictionary<string, string> Data,
+        Dictionary<string, string> Content,
         string ContentType = "application/json",
-        Dictionary<string, string>? Arguments = null)
+        string Parameter = "",
+        Dictionary<string, string>? Arguments = null,
+        Dictionary<string, string>? Headers = null)
     {
-        return await _client.PutAsync(
-            AppendArguments(URI, Arguments),
-            new StringContent(
-                JSONStringifyDictionary(Data),
-                Encoding.UTF8,
-                ContentType)
-        );
+        var Request = new HttpRequestMessage(
+            HttpMethod.Put,
+            AppendArguments(URI + Parameter, Arguments))
+        {
+            Content = new StringContent(JSONStringifyDictionary(Content), Encoding.UTF8, ContentType)
+        };
+        AddHeaders(Request, Headers);
+        return await _client.SendAsync(Request);
     }
 
     public static async Task<HttpResponseMessage> DeleteAsync(
         string URI,
-        Dictionary<string, string>? Arguments = null)
+        string Parameter = "",
+        Dictionary<string, string>? Arguments = null,
+        Dictionary<string, string>? Headers = null)
     {
-        return await _client.DeleteAsync(
-            AppendArguments(URI, Arguments)
-        );
+        var Request = new HttpRequestMessage(HttpMethod.Delete, AppendArguments(URI + Parameter, Arguments));
+        AddHeaders(Request, Headers);
+        return await _client.SendAsync(Request);
     }
 }
