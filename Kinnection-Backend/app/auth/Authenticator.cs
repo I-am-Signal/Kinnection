@@ -90,7 +90,7 @@ public static class Authenticator
             )
         );
 
-        string AccessToken = "";
+        string AccessToken = RawAccess;
         string RefreshToken = "";
 
         // Verify access token is valid
@@ -117,8 +117,8 @@ public static class Authenticator
 
         if (httpContext != null)
         {
-            httpContext.Response.Headers.Authorization = $"Bearer {SignToken(Auth.Authorization)}";
-            httpContext.Response.Headers["X-Refresh-Token"] = SignToken(Auth.Refresh);
+            httpContext.Response.Headers.Authorization = $"Bearer {AccessToken}";
+            httpContext.Response.Headers["X-Refresh-Token"] = RefreshToken;
         }
 
         return new Dictionary<string, string>
@@ -242,12 +242,18 @@ public static class Authenticator
             string DecodedPayload = Base64UrlEncoder.Decode(TokenParts[1]);
             string EncodedSignature = TokenParts[2]; // easier to use via decoding at arrival
 
+            var JsonSignature = new { signature = (string) EncodedSignature };
+
+            var Header = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedHeader)!;
+            var Payload = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedPayload)!;
+            var Signature = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                JsonSerializer.Serialize(JsonSignature))!;
+
             return new Dictionary<string, Dictionary<string, JsonElement>>
             {
-                ["header"] = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedHeader)!,
-                ["payload"] = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedPayload)!,
-                ["signature"] = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-                    JsonSerializer.Serialize(new { signature = EncodedSignature }))!
+                ["header"] = Header,
+                ["payload"] = Payload,
+                ["signature"] = Signature
             };
         }
         catch (JsonException j)
