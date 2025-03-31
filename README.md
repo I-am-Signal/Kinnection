@@ -75,6 +75,6 @@ The `.env.template` file contains a template of the `.env` file that should be p
 ### Auth Management Vars
 - `ACCESS_DURATION`: Number of minutes an Access JWT is valid for before expiration
 - `REFRESH_DURATION`: Number of days a Refresh JWT is valid for before expiration
-- `ISSUER`: The issuer for the JWTs
-- `SECRET`: The JWT secret
-- `KEY`: The hash key
+- `ISSUER`: The issuer URI for the JWTs
+- `SECRET`: The JWT secret for RS-256 Signing
+- `KEY`: The hash key for passwords
