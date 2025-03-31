@@ -29,7 +29,7 @@ static class UserAPIs
                     throw new ArgumentException("Password must not be null!");
                 if (string.IsNullOrEmpty(request.Email))
                     throw new ArgumentException("Email must not be null!");
-                
+
                 // Hash password
                 string PassHash = PassForge.HashPass(
                     KeyMaster.Decrypt(
@@ -114,7 +114,7 @@ static class UserAPIs
                 // Modify and save user
                 var existing = Context.Users
                     .First(b => b.ID == id);
-                
+
                 existing.Fname = request.Fname;
                 existing.Lname = request.Lname;
                 existing.Email = request.Email;
@@ -182,11 +182,16 @@ static class UserAPIs
         .WithOpenApi();
 
 
-        app.MapGet("/users/{id}", async (int id) =>
+        app.MapGet("/users/{id}", async (int id, HttpContext httpContext) =>
         {
             try
             {
                 using var Context = DatabaseManager.GetActiveContext();
+
+                // Authenticate
+                Authenticator.Authenticate(Context, httpContext: httpContext);
+
+                // Compile response
                 var output = await Context.Users
                     .Select(user => new GetUsersResponse
                     {
@@ -198,6 +203,22 @@ static class UserAPIs
                     .SingleAsync(u => u.ID == id);
 
                 return Results.Ok(output);
+            }
+            catch (AuthenticationException a)
+            {
+                Console.WriteLine(a);
+                return Results.Problem(
+                    detail: a.Message,
+                    statusCode: 401
+                );
+            }
+            catch (InvalidOperationException i)
+            {
+                Console.WriteLine(i);
+                return Results.Problem(
+                    detail: i.Message,
+                    statusCode: 404
+                );
             }
             catch (Exception e)
             {
