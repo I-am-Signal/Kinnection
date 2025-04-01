@@ -356,21 +356,29 @@ public static class Authenticator
     /// <returns>Returns true if the signed JWT is untampered, false otherwise.</returns>
     public static bool VerifyToken(string Token)
     {
-        var Keys = KeyMaster.GetKeys();
+        try
+        {
+            var Keys = KeyMaster.GetKeys();
 
-        string[] TokenParts = Token.Split('.');
-        if (TokenParts.Length != 3) return false;
+            string[] TokenParts = Token.Split('.');
+            if (TokenParts.Length != 3) return false;
 
-        byte[] EncodedMessage = Encoding.UTF8.GetBytes($"{TokenParts[0]}.{TokenParts[1]}");
-        byte[] DecodedSignature = Base64UrlEncoder.DecodeBytes(TokenParts[2]);
+            byte[] EncodedMessage = Encoding.UTF8.GetBytes($"{TokenParts[0]}.{TokenParts[1]}");
+            byte[] DecodedSignature = Base64UrlEncoder.DecodeBytes(TokenParts[2]);
 
-        using RSA rsa = RSA.Create();
-        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(Keys.Public), out _);
+            using RSA rsa = RSA.Create();
+            rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(Keys.Public), out _);
 
-        return rsa.VerifyData(
-            EncodedMessage,
-            DecodedSignature,
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1);
+            return rsa.VerifyData(
+                EncodedMessage,
+                DecodedSignature,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw new AuthenticationException("Invalid token provided.");
+        }
     }
 }

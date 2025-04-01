@@ -1,5 +1,6 @@
 using Kinnection;
 using NUnit.Framework;
+using System.Net;
 using System.Security.Authentication;
 
 namespace test;
@@ -43,9 +44,36 @@ public class AuthenticatorTest
     }
 
     [Test, Order(3)]
-    public void NegAuthenticate()
+    public async Task NegAuthenticateHttpContext()
     {
         Authenticator.Provision((int)UserID!);
+        var RequestContent = new Dictionary<string, string>()
+        {
+            ["fname"] = "Auth",
+            ["lname"] = "Test",
+            ["email"] = "AuthTest@mail.com"
+        };
+
+        var Header = new Dictionary<string, string>()
+        {
+            ["Authorization"] = $"Bearer {Tokens["access"]}1",
+            ["X-Refresh-Token"] = Tokens["refresh"] + "1"
+        };
+
+        HttpResponseMessage Response = await HttpService.PutAsync(
+            TestRunner.GetURI() + "users/",
+            RequestContent,
+            Parameter: $"{UserID}",
+            Headers: Header
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
+
+    [Test, Order(4)]
+    public void NegAuthenticate()
+    {
         try
         {
             Authenticator.Authenticate(Context!, Tokens: Tokens);
@@ -57,7 +85,7 @@ public class AuthenticatorTest
         // Any other exception occuring == test fail
     }
 
-    [Test, Order(4)]
+    [Test, Order(5)]
     public void NegProvision()
     {
         try { Authenticator.Provision(0); }
