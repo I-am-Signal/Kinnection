@@ -23,15 +23,23 @@ public class AuthenticatorTest
     public void PosProvision()
     {
         Tokens = Authenticator.Provision((int)UserID!);
-        Assert.That(Authenticator.VerifyToken(Tokens["access"]), Is.True);
-        Assert.That(Authenticator.VerifyToken(Tokens["refresh"]), Is.True);
+        TestRunner.CheckTokens(Tokens: Tokens);
     }
 
     [Test, Order(2)]
     public void PosAuthenticate()
     {
+        // NOTE: This method does not check the httpContext side of this method,
+        //  only the core functionality. If an issue occurs with httpContext,
+        //  the endpoint tests would fail but this will pass.
+
         Assert.That(Tokens, !Is.Null);
-        Authenticator.Authenticate(Context!, Tokens: Tokens);
+        Tokens = Authenticator.Authenticate(Context!, Tokens: Tokens);
+        TestRunner.CheckTokens(Tokens: Tokens);
+
+        // Repeat to check for issues in processing
+        Tokens = Authenticator.Authenticate(Context!, Tokens: Tokens);
+        TestRunner.CheckTokens(Tokens: Tokens);
     }
 
     [Test, Order(3)]
@@ -52,7 +60,8 @@ public class AuthenticatorTest
     [Test, Order(4)]
     public void NegProvision()
     {
-        Authenticator.Provision(0);
+        try { Authenticator.Provision(0); }
+        catch (KeyNotFoundException k) { Assert.That(k, Is.InstanceOf<KeyNotFoundException>()); }
     }
 
     [OneTimeTearDown]

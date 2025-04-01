@@ -32,12 +32,13 @@ public static class TestRunner
     /// <exception cref="ApplicationException"></exception>
     public static string GetURI()
     {
-        if (URI == string.Empty){
+        if (URI == string.Empty)
+        {
             string ISSUER = Environment.GetEnvironmentVariable("ISSUER")!;
-            string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!; 
-            
+            string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!;
+
             if (string.IsNullOrEmpty(ISSUER) || string.IsNullOrEmpty(ASP_PORT))
-                throw new ApplicationException("Environment variables are null!");    
+                throw new ApplicationException("Environment variables are null!");
             URI = $"{ISSUER}:{ASP_PORT}/";
         }
         return URI;
@@ -52,13 +53,23 @@ public static class TestRunner
     /// <param name="AssertAccess"></param>
     /// <param name="AssertRefresh"></param>
     public static void CheckTokens(
-        HttpResponseHeaders Headers,
+        HttpResponseHeaders? Headers = null,
+        Dictionary<string, string>? Tokens = null,
         bool AssertAccess = true,
         bool AssertRefresh = true)
     {
-        // Account for the "Bearer XXXXXXX"
-        string Access = Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
-        string Refresh = Headers.GetValues("X-Refresh-Token").ElementAt(0);
+        string Access, Refresh;
+        if (Headers != null)
+        {
+            // Account for the "Bearer XXXXXXX"
+            Access = Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
+            Refresh = Headers.GetValues("X-Refresh-Token").ElementAt(0);
+        }
+        else
+        {
+            Access = Tokens!["access"];
+            Refresh = Tokens!["refresh"];
+        }
 
         bool IsAccessValid = Authenticator.VerifyToken(Access);
         bool IsRefreshValid = Authenticator.VerifyToken(Refresh);
