@@ -90,7 +90,7 @@ public static class Authenticator
             )
         );
 
-        string AccessToken = RawAccess;
+        string AccessToken = RawAccess; // Save access if not being refreshed
         string RefreshToken = "";
 
         // Verify access token is valid
@@ -264,27 +264,35 @@ public static class Authenticator
     }
 
     /// <summary>
-    /// Provisions a new set of tokens to the user of UserID, accessible with keys "access" and "refresh".
+    /// Provisions a new set of tokens to the user of UserID.
     /// If provided an HttpContext, the tokens are saved to the Response headers.
     /// Only use this function when a successful login occurs to issue a user brand new tokens. 
     /// </summary>
     /// <param name="UserID"></param>
     /// <param name="httpContext"></param>
-    /// <returns></returns>
+    /// <returns>Dictionary of tokens accessible with keys "access" and "refresh".</returns>
     /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="KeyNotFoundException"></exception>
     public static Dictionary<string, string> Provision(
         int UserID,
         HttpContext? httpContext = null)
     {
         using var Context = DatabaseManager.GetActiveContext();
+
+        // Get the existing user to ensure that this is being created for a real user
+        var ExistingUser = Context.Users.FirstOrDefault(u => u.ID == UserID);
         var Auth = Context.Authentications.FirstOrDefault(b => b.UserID == UserID);
 
         string AccessToken = SignToken(GenerateAccessPayload(UserID));
-        string RefreshToken = SignToken(GenerateAccessPayload(UserID));
+        string RefreshToken = SignToken(GenerateRefreshPayload(UserID));
         string AccessHash = AccessToken.Split('.')[2];
-        string RefreshHash = AccessToken.Split('.')[2];
+        string RefreshHash = RefreshToken.Split('.')[2];
 
-        if (Auth == null)
+        if (ExistingUser == null)
+        {
+            throw new KeyNotFoundException($"User {UserID} does not exist.");
+        }
+        else if (Auth == null)
         {
             Auth = new Authentication
             {
