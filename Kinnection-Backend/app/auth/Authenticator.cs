@@ -20,7 +20,7 @@ public static class Authenticator
     /// <param name="Context"></param>
     /// <param name="httpContext"></param>
     /// <param name="Tokens"></param>
-    /// <returns>Dictionary with "access" and "refresh" tokens</returns>
+    /// <returns>Dictionary with "access" token, "refresh" token, and "user_id" values</returns>
     /// <exception cref="AuthenticationException"></exception>
     /// <exception cref="KeyNotFoundException"></exception>
     public static Dictionary<string, string> Authenticate(
@@ -115,6 +115,8 @@ public static class Authenticator
             Auth.PrevRef = GenerateRandomString(64);
         }
 
+        Context.SaveChanges();
+
         if (httpContext != null)
         {
             httpContext.Response.Headers.Authorization = $"Bearer {AccessToken}";
@@ -124,7 +126,8 @@ public static class Authenticator
         return new Dictionary<string, string>
         {
             ["access"] = AccessToken,
-            ["refresh"] = RefreshToken
+            ["refresh"] = RefreshToken,
+            ["user_id"] = UserID.ToString()
         };
     }
 
@@ -242,7 +245,7 @@ public static class Authenticator
             string DecodedPayload = Base64UrlEncoder.Decode(TokenParts[1]);
             string EncodedSignature = TokenParts[2]; // easier to use via decoding at arrival
 
-            var JsonSignature = new { signature = (string) EncodedSignature };
+            var JsonSignature = new { signature = EncodedSignature };
 
             var Header = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedHeader)!;
             var Payload = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(DecodedPayload)!;
@@ -361,7 +364,8 @@ public static class Authenticator
             var Keys = KeyMaster.GetKeys();
 
             string[] TokenParts = Token.Split('.');
-            if (TokenParts.Length != 3) return false;
+            if (TokenParts.Length != 3)
+                throw new AuthenticationException("Invalid token provided.");
 
             byte[] EncodedMessage = Encoding.UTF8.GetBytes($"{TokenParts[0]}.{TokenParts[1]}");
             byte[] DecodedSignature = Base64UrlEncoder.DecodeBytes(TokenParts[2]);
@@ -375,6 +379,7 @@ public static class Authenticator
                 HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1);
         }
+        catch (AuthenticationException) { throw; }
         catch (Exception e)
         {
             Console.WriteLine(e);

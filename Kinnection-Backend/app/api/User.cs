@@ -155,34 +155,7 @@ static class UserAPIs
         .WithName("PutUser")
         .WithOpenApi();
 
-
-        app.MapGet("/users/", async () =>
-        {
-            try
-            {
-                using var Context = DatabaseManager.GetActiveContext();
-                var output = await Context.Users
-                    .Select(user => new GetUsersResponse
-                    {
-                        ID = user.ID,
-                        Fname = user.Fname,
-                        Lname = user.Lname,
-                        Email = user.Email
-                    }).ToListAsync();
-
-                return Results.Ok(output);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return Results.Problem(statusCode: 500);
-            }
-        })
-        .WithName("GetUsers")
-        .WithOpenApi();
-
-
-        app.MapGet("/users/{id}", async (int id, HttpContext httpContext) =>
+        app.MapGet("/users/{id}", (int id, HttpContext httpContext) =>
         {
             try
             {
@@ -192,17 +165,16 @@ static class UserAPIs
                 Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Compile response
-                var output = await Context.Users
-                    .Select(user => new GetUsersResponse
-                    {
-                        ID = user.ID,
-                        Fname = user.Fname,
-                        Lname = user.Lname,
-                        Email = user.Email
-                    })
-                    .SingleAsync(u => u.ID == id);
-
-                return Results.Ok(output);
+                return Results.Ok(
+                    Context.Users.Select(user => new GetUsersResponse
+                        {
+                            ID = user.ID,
+                            Fname = user.Fname,
+                            Lname = user.Lname,
+                            Email = user.Email
+                        })
+                        .Single(u => u.ID == id)
+                );
             }
             catch (AuthenticationException a)
             {
@@ -229,31 +201,53 @@ static class UserAPIs
         .WithName("GetUser")
         .WithOpenApi();
 
-
-        app.MapDelete("/users/{id}", async (int id) =>
+        app.MapDelete("/users/{id}", (int id, HttpContext httpContext) =>
         {
             try
             {
                 using var Context = DatabaseManager.GetActiveContext();
 
-                User DeletedUser = await Context.Users
-                    .SingleAsync(u => u.ID == id);
-                Context.Remove(DeletedUser);
-                await Context.SaveChangesAsync();
+                // Authenticate
+                var Auth = Authenticator.Authenticate(Context, httpContext: httpContext);
+                int UserID = Convert.ToInt32(Auth["user_id"]);
 
-                return Results.Ok(new GetUsersResponse
-                {
-                    ID = DeletedUser.ID,
-                    Fname = DeletedUser.Fname,
-                    Lname = DeletedUser.Lname,
-                    Email = DeletedUser.Email
-                });
+                // Find the user to delete
+                var UserToDelete = Context.Users
+                    .FirstOrDefault(u => u.ID == id) ??
+                        throw new InvalidOperationException($"User with ID {id} not found.");
+
+                // Check if the user is authorized to delete the user
+                if (UserID != UserToDelete.ID)
+                    throw new UnauthorizedAccessException($"You ({UserID}) are not authorized to delete user {UserToDelete.ID}.");
+
+                // Remove the user
+                Context.Users.Remove(UserToDelete);
+                Context.SaveChanges();
+
+                // Return a 204 No Content response
+                return Results.NoContent();
+            }
+            catch (AuthenticationException a)
+            {
+                Console.WriteLine(a);
+                return Results.Problem(
+                    detail: a.Message,
+                    statusCode: 401
+                );
+            }
+            catch (UnauthorizedAccessException u)
+            {
+                Console.WriteLine(u);
+                return Results.Problem(
+                    detail: u.Message,
+                    statusCode: 403
+                );
             }
             catch (InvalidOperationException i)
             {
                 Console.WriteLine(i);
                 return Results.Problem(
-                    detail: $"A user with ID {id} does not exist.",
+                    detail: i.Message,
                     statusCode: 404
                 );
             }
