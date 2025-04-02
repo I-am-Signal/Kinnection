@@ -35,7 +35,11 @@ public static class Authenticator
         // Process and verify tokens
         if (httpContext != null)
         {
-            RawAccess = httpContext.Request.Headers.Authorization!.ToString().Split(" ")[1];
+            var SplitAccess = httpContext.Request.Headers.Authorization!.ToString().Split(" ");
+            // Ensure RawAccess can be split
+            if (SplitAccess.Length != 2)
+                throw new AuthenticationException("Invalid token provided.");
+            RawAccess = SplitAccess[1];
             RawRefresh = httpContext.Request.Headers["X-Refresh-Token"]!;
         }
         else if (Tokens != null)
