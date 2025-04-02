@@ -180,9 +180,27 @@ public class UsersTest
         TestRunner.CheckTokens(Response.Headers);
         TestRunner.SaveTokens(Response.Headers);
 
-        // Tear down other user
+        // Ensure unauthorized access is prevented
         // Delete new user
         var Header = new Dictionary<string, string>()
+        {
+            ["Authorization"] = $"Bearer {Access}1",
+            ["X-Refresh-Token"] = Refresh + "1"
+        };
+
+        Response = await HttpService.DeleteAsync(
+            URI + UserSubDir,
+            Parameter: OtherUserID,
+            Headers: Header
+        );
+
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+
+        // No tokens to save from headers, exception occurred in authentication
+
+        // Tear down other user
+        // Delete new user
+        Header = new Dictionary<string, string>()
         {
             ["Authorization"] = $"Bearer {Access}",
             ["X-Refresh-Token"] = Refresh
@@ -196,6 +214,27 @@ public class UsersTest
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Save other user's tokens
+        Access = Response.Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
+        Refresh = Response.Headers.GetValues("X-Refresh-Token").ElementAt(0);
+
+
+        // Ensure unauthorized access is prevented
+        // Delete new user
+        Header = new Dictionary<string, string>()
+        {
+            ["Authorization"] = $"Bearer {Access}",
+            ["X-Refresh-Token"] = Refresh
+        };
+
+        Response = await HttpService.DeleteAsync(
+            URI + UserSubDir,
+            Parameter: OtherUserID,
+            Headers: Header
+        );
+
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 
     [Test, Order(5)]
