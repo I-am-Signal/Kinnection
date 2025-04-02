@@ -83,18 +83,12 @@ public class UsersTest
             ["lname"] = UserInfo["lname"].GetString()!,
             ["email"] = UserInfo["email"].GetString()!
         };
-
-        var Header = new Dictionary<string, string>()
-        {
-            ["Authorization"] = $"Bearer {TestRunner.Access}",
-            ["X-Refresh-Token"] = TestRunner.Refresh
-        };
     
         HttpResponseMessage Response = await HttpService.PutAsync(
             URI + UserSubDir,
             RequestContent,
             Parameter: $"{UserInfo["id"].GetInt32()!}",
-            Headers: Header
+            Headers: TestRunner.GetHeaders()
         );
 
         // Ensure expected status code
@@ -119,16 +113,10 @@ public class UsersTest
     public async Task PosGetUsers()
     {
         // Make request
-        var Header = new Dictionary<string, string>()
-        {
-            ["Authorization"] = $"Bearer {TestRunner.Access}",
-            ["X-Refresh-Token"] = TestRunner.Refresh
-        };
-    
         HttpResponseMessage Response = await HttpService.GetAsync(
             URI + UserSubDir,
             Parameter: $"{UserInfo["id"].GetInt32()!}",
-            Headers: Header
+            Headers: TestRunner.GetHeaders()
         );
 
         // Ensure expected status code
@@ -147,6 +135,87 @@ public class UsersTest
         Assert.That(output["lname"].GetString(), Is.EqualTo(UserInfo["lname"].GetString()));
         Assert.That(output["email"].GetString(), Is.EqualTo(UserInfo["email"].GetString()));
     }
+
+    [Test, Order(4)]
+    public async Task NegDeleteUsers()
+    {
+        // Set up other user
+        // Make request for other user
+        var RequestContent = new Dictionary<string, string>()
+        {
+            ["fname"] = "Negative",
+            ["lname"] = "DeleteTest",
+            ["email"] = "NegativeDelete@mail.com",
+            ["password"] = KeyMaster.Encrypt(
+                "NegativeDelete",
+                TestRunner.Public)
+        };
+
+        HttpResponseMessage Response = await HttpService.PostAsync(
+            URI + UserSubDir,
+            RequestContent
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        // Save other user's tokens
+        var Access = Response.Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
+        var Refresh = Response.Headers.GetValues("X-Refresh-Token").ElementAt(0);
+
+        var OtherUserID = Response.Headers.Location!.ToString();
+
+        // Attempt to delete other user
+        // Make request to delete other user
+        Response = await HttpService.DeleteAsync(
+            URI + UserSubDir,
+            Parameter: OtherUserID,
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
+
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
+
+        // Tear down other user
+        // Delete new user
+        var Header = new Dictionary<string, string>()
+        {
+            ["Authorization"] = $"Bearer {Access}",
+            ["X-Refresh-Token"] = Refresh
+        };
+
+        Response = await HttpService.DeleteAsync(
+            URI + UserSubDir,
+            Parameter: OtherUserID,
+            Headers: Header
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+    }
+
+    [Test, Order(5)]
+    public async Task PosDeleteUsers()
+    {
+        // Make request    
+        HttpResponseMessage Response = await HttpService.DeleteAsync(
+            URI + UserSubDir,
+            Parameter: $"{UserInfo["id"].GetInt32()!}",
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
+    }
+
     [OneTimeTearDown]
     public void TearDown() { }
 }

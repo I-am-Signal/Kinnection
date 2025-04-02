@@ -9,7 +9,6 @@ namespace test;
 public class AuthenticatorTest
 {
     private KinnectionContext? Context;
-    private Dictionary<string, string>? Tokens;
     private int? UserID;
 
     [OneTimeSetUp]
@@ -23,8 +22,9 @@ public class AuthenticatorTest
     [Test, Order(1)]
     public void PosProvision()
     {
-        Tokens = Authenticator.Provision((int)UserID!);
+        var Tokens = Authenticator.Provision((int)UserID!);
         TestRunner.CheckTokens(Tokens: Tokens);
+        TestRunner.SaveTokens(Tokens: Tokens);
     }
 
     [Test, Order(2)]
@@ -34,13 +34,14 @@ public class AuthenticatorTest
         //  only the core functionality. If an issue occurs with httpContext,
         //  the endpoint tests would fail but this will pass.
 
-        Assert.That(Tokens, !Is.Null);
-        Tokens = Authenticator.Authenticate(Context!, Tokens: Tokens);
+        var Tokens = Authenticator.Authenticate(Context!, Tokens: TestRunner.GetTokens());
         TestRunner.CheckTokens(Tokens: Tokens);
+        TestRunner.SaveTokens(Tokens: Tokens);
 
         // Repeat to check for issues in processing
         Tokens = Authenticator.Authenticate(Context!, Tokens: Tokens);
         TestRunner.CheckTokens(Tokens: Tokens);
+        TestRunner.SaveTokens(Tokens: Tokens);
     }
 
     [Test, Order(3)]
@@ -54,17 +55,17 @@ public class AuthenticatorTest
             ["email"] = "AuthTest@mail.com"
         };
 
-        var Header = new Dictionary<string, string>()
+        var Headers = new Dictionary<string, string>()
         {
-            ["Authorization"] = $"Bearer {Tokens["access"]}1",
-            ["X-Refresh-Token"] = Tokens["refresh"] + "1"
+            ["Authorization"] = "Bearer XXXXX",
+            ["X-Refresh-Token"] = "XXXXX"
         };
 
         HttpResponseMessage Response = await HttpService.PutAsync(
             TestRunner.GetURI() + "users/",
             RequestContent,
             Parameter: $"{UserID}",
-            Headers: Header
+            Headers: Headers
         );
 
         // Ensure expected status code
@@ -76,7 +77,8 @@ public class AuthenticatorTest
     {
         try
         {
-            Authenticator.Authenticate(Context!, Tokens: Tokens);
+            // After previous test, stored tokens are not the same
+            Authenticator.Authenticate(Context!, Tokens: TestRunner.GetTokens());
         }
         catch (AuthenticationException a)
         {
