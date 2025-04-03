@@ -70,15 +70,9 @@ public class PassForgeTest
     public void TearDown()
     {
         // Remove new user
-        List<object> RecordsToRemove = [];
-        RecordsToRemove.AddRange(Context!.Passwords
-            .Where(p => p.UserID == PassUser.ID)
-            .ToList());
-        RecordsToRemove.Add(Context.Users
-            .First(u => u.ID == PassUser.ID));
-
-        foreach (var Record in RecordsToRemove)
-            Context.Remove(Record);
+        Context!.Passwords.RemoveRange(
+            Context.Passwords.Where(p => p.UserID == PassUser.ID));
+        Context.Users.Remove(PassUser);
 
         Context.SaveChanges();
     }

@@ -214,17 +214,12 @@ static class UserAPIs
                     .FirstOrDefault(u => u.ID == id) ??
                         throw new InvalidOperationException($"User with ID {id} not found.");
 
-                // Remove the user and their associated records
-                List<object> UserRecords = [];
-                UserRecords.AddRange(Context.Passwords
-                    .Where(p => p.UserID == UserToDelete.ID)
-                    .ToList());
-                UserRecords.AddRange(Context.Authentications
-                    .Where(a => a.UserID == UserToDelete.ID)
-                    .ToList());
-                UserRecords.Add(UserToDelete);
-                foreach (var Record in UserRecords)
-                    Context.Remove(Record);
+                // Remove the user's associated records
+                Context.Passwords.RemoveRange(
+                    Context.Passwords.Where(p => p.UserID == UserToDelete.ID));
+                Context.Authentications.RemoveRange(
+                    Context.Authentications.Where(a => a.UserID == UserToDelete.ID));
+                Context.Users.Remove(UserToDelete);
 
                 Context.SaveChanges();
 

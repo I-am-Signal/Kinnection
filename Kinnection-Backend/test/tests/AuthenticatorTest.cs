@@ -94,15 +94,9 @@ public class AuthenticatorTest
     public void TearDown()
     {
         // Remove new user
-        List<object> RecordsToRemove = [];
-        RecordsToRemove.AddRange(Context!.Authentications
-            .Where(a => a.UserID == AuthUser.ID)
-            .ToList());
-        RecordsToRemove.Add(Context.Users
-            .FirstOrDefault(u => u.ID == AuthUser.ID)!);
-
-        foreach (var Record in RecordsToRemove)
-            Context.Remove(Record);
+        Context!.Authentications.RemoveRange(
+            Context.Authentications.Where(a => a.UserID == AuthUser.ID));
+        Context.Users.Remove(AuthUser);
 
         Context.SaveChanges();
     }
