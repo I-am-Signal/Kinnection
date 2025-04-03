@@ -14,13 +14,14 @@ namespace Kinnection
             $"User={Environment.GetEnvironmentVariable("MYSQL_USER")};" +
             $"Password={Environment.GetEnvironmentVariable("MYSQL_PASSWORD")};";
 
-        // private static KinnectionContext? _activeContext;
+        private static KinnectionContext _activeContext = InitializeDatabaseContext();
 
         public static KinnectionContext GetActiveContext()
         {
-            // Context instance is disposed of throughout the code base, making this not work
-            // return _activeContext ??= InitializeDatabaseContext();
-            return InitializeDatabaseContext();
+            if (_activeContext == null || IsContextDisposed(_activeContext))
+                _activeContext = InitializeDatabaseContext();
+
+            return _activeContext!;
         }
 
         private static KinnectionContext InitializeDatabaseContext()
@@ -58,6 +59,12 @@ namespace Kinnection
 
             // Under normal conditions, this will never be triggered
             throw new InvalidOperationException("Unexpected error in database connection logic.");
+        }
+
+        private static bool IsContextDisposed(KinnectionContext Context)
+        {
+            try { return !Context.Database.CanConnect(); }
+            catch (ObjectDisposedException) { return true; }
         }
     }
 }
