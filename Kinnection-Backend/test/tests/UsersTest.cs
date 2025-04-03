@@ -10,21 +10,17 @@ public class UsersTest
 {
     private readonly string URI = TestRunner.GetURI();
     private readonly string UserSubDir = "users/";
-
-    private Dictionary<string, JsonElement> UserInfo = [];
+    private Dictionary<string, JsonElement> UserInfo =
+        JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+        @"{
+            ""fname"": ""PostFirst"",
+            ""lname"": ""PostLast"",
+            ""email"": ""PostEmail@mail.com"",
+            ""password"": ""TestPassword""
+        }")!;
 
     [OneTimeSetUp]
-    public void Initialize()
-    {
-        TestRunner.Public = KeyMaster.GetKeys().Public;
-        UserInfo = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-            @"{
-                ""fname"": ""PostFirst"",
-                ""lname"": ""PostLast"",
-                ""email"": ""PostEmail@mail.com"",
-                ""password"": ""TestPassword""
-            }")!;
-    }
+    public void SetUp() { }
 
     [Test, Order(1)]
     public async Task PosPostUsers()
@@ -37,7 +33,7 @@ public class UsersTest
             ["email"] = UserInfo["email"].GetString()!,
             ["password"] = KeyMaster.Encrypt(
                 UserInfo["password"].GetString()!,
-                TestRunner.Public)
+                TestRunner.EncryptionKeys.Public)
         };
 
         HttpResponseMessage Response = await HttpService.PostAsync(
@@ -83,7 +79,7 @@ public class UsersTest
             ["lname"] = UserInfo["lname"].GetString()!,
             ["email"] = UserInfo["email"].GetString()!
         };
-    
+
         HttpResponseMessage Response = await HttpService.PutAsync(
             URI + UserSubDir,
             RequestContent,
@@ -139,102 +135,43 @@ public class UsersTest
     [Test, Order(4)]
     public async Task NegDeleteUsers()
     {
-        // Set up other user
-        // Make request for other user
-        var RequestContent = new Dictionary<string, string>()
-        {
-            ["fname"] = "Negative",
-            ["lname"] = "DeleteTest",
-            ["email"] = "NegativeDelete@mail.com",
-            ["password"] = KeyMaster.Encrypt(
-                "NegativeDelete",
-                TestRunner.Public)
-        };
-
-        HttpResponseMessage Response = await HttpService.PostAsync(
-            URI + UserSubDir,
-            RequestContent
-        );
-
-        // Ensure expected status code
-        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-
-        // Save other user's tokens
-        var Access = Response.Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
-        var Refresh = Response.Headers.GetValues("X-Refresh-Token").ElementAt(0);
-
-        var OtherUserID = Response.Headers.Location!.ToString();
-
-        // Attempt to delete other user
-        // Make request to delete other user
-        Response = await HttpService.DeleteAsync(
-            URI + UserSubDir,
-            Parameter: OtherUserID,
-            Headers: TestRunner.GetHeaders()
-        );
-
-        // Ensure expected status code
-        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Forbidden));
-
-        // Verify and save tokens
-        TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
-
         // Ensure unauthorized access is prevented
-        // Delete new user
-        var Header = new Dictionary<string, string>()
-        {
-            ["Authorization"] = $"Bearer {Access}1",
-            ["X-Refresh-Token"] = Refresh + "1"
-        };
+        // Make request with invalid tokens
+        var Header = TestRunner.GetHeaders();
+        Header["Authorization"] = Header["Authorization"] + "1";
+        Header["X-Refresh-Token"] = Header["X-Refresh-Token"] + "1";
 
-        Response = await HttpService.DeleteAsync(
+        var Response = await HttpService.DeleteAsync(
             URI + UserSubDir,
-            Parameter: OtherUserID,
+            Parameter: UserInfo["id"].GetInt32().ToString(),
             Headers: Header
         );
 
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-
         // No tokens to save from headers, exception occurred in authentication
 
-        // Tear down other user
-        // Delete new user
-        Header = new Dictionary<string, string>()
-        {
-            ["Authorization"] = $"Bearer {Access}",
-            ["X-Refresh-Token"] = Refresh
-        };
-
+        // Make request with empty tokens
         Response = await HttpService.DeleteAsync(
             URI + UserSubDir,
-            Parameter: OtherUserID,
-            Headers: Header
+            Parameter: UserInfo["id"].GetInt32().ToString()
         );
 
         // Ensure expected status code
-        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        // No tokens to save from headers, exception occurred in authentication
 
-        // Save other user's tokens
-        Access = Response.Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
-        Refresh = Response.Headers.GetValues("X-Refresh-Token").ElementAt(0);
-
-
-        // Ensure unauthorized access is prevented
-        // Delete new user
-        Header = new Dictionary<string, string>()
-        {
-            ["Authorization"] = $"Bearer {Access}",
-            ["X-Refresh-Token"] = Refresh
-        };
-
+        // Expect Not Found when user does not exist
+        // Delete non-existent user
         Response = await HttpService.DeleteAsync(
             URI + UserSubDir,
-            Parameter: OtherUserID,
-            Headers: Header
+            Parameter: "0",
+            Headers: TestRunner.GetHeaders()
         );
 
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
     }
 
     [Test, Order(5)]

@@ -9,20 +9,30 @@ namespace test;
 public class AuthenticatorTest
 {
     private KinnectionContext? Context;
-    private int? UserID;
+    private readonly User AuthUser = new()
+    {
+        Created = DateTime.UtcNow,
+        Fname = "AuthFname",
+        Lname = "AuthLname",
+        Email = "AuthEmail@mail.com",
+        GoogleSO = false
+    };
+    private readonly string URL = TestRunner.GetURI() + "users/";
 
     [OneTimeSetUp]
     public void SetUp()
     {
         Context = DatabaseManager.GetActiveContext();
-        UserID = 47; // hardcoded until user is made on demand
-        // create user for testing
+
+        // Create new user
+        Context.Add(AuthUser);
+        Context.SaveChanges();
     }
 
     [Test, Order(1)]
     public void PosProvision()
     {
-        var Tokens = Authenticator.Provision((int)UserID!);
+        var Tokens = Authenticator.Provision(AuthUser.ID);
         TestRunner.CheckTokens(Tokens: Tokens);
         TestRunner.SaveTokens(Tokens: Tokens);
     }
@@ -45,9 +55,8 @@ public class AuthenticatorTest
     }
 
     [Test, Order(3)]
-    public async Task NegAuthenticateHttpContext()
+    public async Task NegAuthenticateHttpRequest()
     {
-        Authenticator.Provision((int)UserID!);
         var RequestContent = new Dictionary<string, string>()
         {
             ["fname"] = "Auth",
@@ -55,17 +64,10 @@ public class AuthenticatorTest
             ["email"] = "AuthTest@mail.com"
         };
 
-        var Headers = new Dictionary<string, string>()
-        {
-            ["Authorization"] = "Bearer XXXXX",
-            ["X-Refresh-Token"] = "XXXXX"
-        };
-
         HttpResponseMessage Response = await HttpService.PutAsync(
-            TestRunner.GetURI() + "users/",
+            URL,
             RequestContent,
-            Parameter: $"{UserID}",
-            Headers: Headers
+            Parameter: AuthUser.ID.ToString()!
         );
 
         // Ensure expected status code
@@ -75,15 +77,9 @@ public class AuthenticatorTest
     [Test, Order(4)]
     public void NegAuthenticate()
     {
-        try
-        {
-            // After previous test, stored tokens are not the same
-            Authenticator.Authenticate(Context!, Tokens: TestRunner.GetTokens());
-        }
-        catch (AuthenticationException a)
-        {
-            Assert.That(a, Is.InstanceOf<AuthenticationException>());
-        }
+        Authenticator.Provision(AuthUser.ID);
+        try { Authenticator.Authenticate(Context!, Tokens: TestRunner.GetTokens()); }
+        catch (AuthenticationException) { } // Expected Behavior
         // Any other exception occuring == test fail
     }
 
@@ -91,12 +87,23 @@ public class AuthenticatorTest
     public void NegProvision()
     {
         try { Authenticator.Provision(0); }
-        catch (KeyNotFoundException k) { Assert.That(k, Is.InstanceOf<KeyNotFoundException>()); }
+        catch (KeyNotFoundException){ } // expected behavior
     }
 
     [OneTimeTearDown]
     public void TearDown()
     {
-        // delete user created for testing
+        // Remove new user
+        List<object> RecordsToRemove = [];
+        RecordsToRemove.AddRange(Context!.Authentications
+            .Where(a => a.UserID == AuthUser.ID)
+            .ToList());
+        RecordsToRemove.Add(Context.Users
+            .FirstOrDefault(u => u.ID == AuthUser.ID)!);
+
+        foreach (var Record in RecordsToRemove)
+            Context.Remove(Record);
+
+        Context.SaveChanges();
     }
 }

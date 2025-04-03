@@ -9,7 +9,6 @@ public static class TestRunner
 {
     private static string Access = string.Empty;
     public static readonly Keys EncryptionKeys = KeyMaster.GetKeys();
-    public static string Public = string.Empty;
     private static string Refresh = string.Empty;
     private static string URI = string.Empty;
 

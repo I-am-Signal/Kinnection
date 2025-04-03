@@ -14,14 +14,22 @@ namespace Kinnection
             $"User={Environment.GetEnvironmentVariable("MYSQL_USER")};" +
             $"Password={Environment.GetEnvironmentVariable("MYSQL_PASSWORD")};";
 
-        private static KinnectionContext _activeContext = InitializeDatabaseContext();
+        // private static KinnectionContext? _activeContext;
 
         public static KinnectionContext GetActiveContext()
         {
-            if (_activeContext == null || IsContextDisposed(_activeContext))
-                _activeContext = InitializeDatabaseContext();
+            // Cached Context Fail Counter: 3
+            // Last fail: 04/02/2025
 
-            return _activeContext!;
+            // if (!IsContextViable(_activeContext))
+            // {
+            //     if (_activeContext != null)
+            //         _activeContext.Dispose();
+            //     _activeContext = InitializeDatabaseContext();
+            // }
+
+            // return _activeContext!;
+            return InitializeDatabaseContext();
         }
 
         private static KinnectionContext InitializeDatabaseContext()
@@ -61,10 +69,17 @@ namespace Kinnection
             throw new InvalidOperationException("Unexpected error in database connection logic.");
         }
 
-        private static bool IsContextDisposed(KinnectionContext Context)
+        private static bool IsContextViable(KinnectionContext? Context)
         {
-            try { return !Context.Database.CanConnect(); }
-            catch (ObjectDisposedException) { return true; }
+            if (Context == null)
+                return false;
+            try
+            {
+                if (Context.Database.CanConnect())
+                    return true;
+            }
+            catch (Exception) { }
+            return false;
         }
     }
 }

@@ -1,6 +1,5 @@
 using Kinnection;
 using NUnit.Framework;
-using System.Security.Authentication;
 
 namespace test;
 
@@ -8,16 +7,22 @@ namespace test;
 public class PassForgeTest
 {
     private KinnectionContext? Context;
-    private string? Password;
-    private int? UserID;
+    private User PassUser = new()
+    {
+        Created = DateTime.UtcNow,
+        Fname = "PassFname",
+        Lname = "PassLname",
+        Email = "PassEmail@mail.com",
+        GoogleSO = false
+    };
+    private readonly string Password = "PassForge";
 
     [OneTimeSetUp]
     public void SetUp()
     {
         Context = DatabaseManager.GetActiveContext();
-        Password = "TestPassword";
-        UserID = 47; // hardcoded until user is made on demand
-        // create user for testing
+        Context.Add(PassUser);
+        Context.SaveChanges();
     }
 
     [Test, Order(1)]
@@ -31,20 +36,32 @@ public class PassForgeTest
     [Test, Order(2)]
     public void IsCorrect()
     {
+        // Create new password
+        string Hash = PassForge.HashPass(Password!);
+        Context!.Add(new Password
+        {
+            Created = DateTime.UtcNow,
+            UserID = PassUser.ID,
+            PassString = Hash
+        });
+        Context.SaveChanges();
+
+        Console.WriteLine(PassUser.ID);
+
         // Positive
         Assert.That(
-            PassForge.IsPassCorrect(Password!, (int)UserID!),
+            PassForge.IsPassCorrect(Password, PassUser.ID),
             Is.True);
 
         // Negative
         Assert.That(
-            PassForge.IsPassCorrect("asdf", (int)UserID!),
+            PassForge.IsPassCorrect("asdf", PassUser.ID),
             Is.False
         );
 
         // Negative
         Assert.That(
-            PassForge.IsPassCorrect(null!, (int)UserID!),
+            PassForge.IsPassCorrect(null!, PassUser.ID),
             Is.False
         );
     }
@@ -52,6 +69,17 @@ public class PassForgeTest
     [OneTimeTearDown]
     public void TearDown()
     {
-        // delete user created for testing
+        // Remove new user
+        List<object> RecordsToRemove = [];
+        RecordsToRemove.AddRange(Context!.Passwords
+            .Where(p => p.UserID == PassUser.ID)
+            .ToList());
+        RecordsToRemove.Add(Context.Users
+            .First(u => u.ID == PassUser.ID));
+
+        foreach (var Record in RecordsToRemove)
+            Context.Remove(Record);
+
+        Context.SaveChanges();
     }
 }

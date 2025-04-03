@@ -1,5 +1,4 @@
 using System.Security.Authentication;
-using Microsoft.EntityFrameworkCore;
 
 namespace Kinnection;
 
@@ -37,7 +36,7 @@ static class UserAPIs
                         EncryptionKeys.Private));
 
                 // Create the new user
-                User NewUser = new User
+                var NewUser = new User
                 {
                     Created = DateTime.UtcNow,
                     Fname = request.Fname,
@@ -167,13 +166,13 @@ static class UserAPIs
                 // Compile response
                 return Results.Ok(
                     Context.Users.Select(user => new GetUsersResponse
-                        {
-                            ID = user.ID,
-                            Fname = user.Fname,
-                            Lname = user.Lname,
-                            Email = user.Email
-                        })
-                        .Single(u => u.ID == id)
+                    {
+                        ID = user.ID,
+                        Fname = user.Fname,
+                        Lname = user.Lname,
+                        Email = user.Email
+                    })
+                    .Single(u => u.ID == id)
                 );
             }
             catch (AuthenticationException a)
@@ -208,20 +207,25 @@ static class UserAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                var Auth = Authenticator.Authenticate(Context, httpContext: httpContext);
-                int UserID = Convert.ToInt32(Auth["user_id"]);
+                Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Find the user to delete
                 var UserToDelete = Context.Users
                     .FirstOrDefault(u => u.ID == id) ??
                         throw new InvalidOperationException($"User with ID {id} not found.");
 
-                // Check if the user is authorized to delete the user
-                if (UserID != UserToDelete.ID)
-                    throw new UnauthorizedAccessException($"You ({UserID}) are not authorized to delete user {UserToDelete.ID}.");
+                // Remove the user and their associated records
+                List<object> UserRecords = [];
+                UserRecords.AddRange(Context.Passwords
+                    .Where(p => p.UserID == UserToDelete.ID)
+                    .ToList());
+                UserRecords.AddRange(Context.Authentications
+                    .Where(a => a.UserID == UserToDelete.ID)
+                    .ToList());
+                UserRecords.Add(UserToDelete);
+                foreach (var Record in UserRecords)
+                    Context.Remove(Record);
 
-                // Remove the user
-                Context.Users.Remove(UserToDelete);
                 Context.SaveChanges();
 
                 // Return a 204 No Content response
@@ -233,14 +237,6 @@ static class UserAPIs
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
-                );
-            }
-            catch (UnauthorizedAccessException u)
-            {
-                Console.WriteLine(u);
-                return Results.Problem(
-                    detail: u.Message,
-                    statusCode: 403
                 );
             }
             catch (InvalidOperationException i)
