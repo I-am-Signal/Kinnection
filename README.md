@@ -1,6 +1,6 @@
 # Kinnection
 
-Kinnection is (going to be) a web application that will allow the user to track their family tree. Using this system, the user will be able to:
+Kinnection is a web application that will allow the user to track their family tree. Using this system, the user will be able to:
 
 - Login (via direct login or Google Sign-On, potentially both later)
 - CRUD Family trees through a dashboard UI
@@ -15,8 +15,14 @@ Kinnection is (going to be) a web application that will allow the user to track 
 
 ## Running the App
 
-(In dev):
+### Required Software
 
+- C#/.NET SDK 8.0+
+- Docker Desktop (or just the Docker engine)
+
+### Running in Development Environment
+
+- Ensure all environment variables are filled in in the `.env` file in `Kinnection/Docker`.
 - Navigate to the `Kinnection/Docker` directory.
 - `docker compose up -d --build`:
   - Builds and brings up the containers
@@ -25,19 +31,42 @@ Kinnection is (going to be) a web application that will allow the user to track 
   - `-v` will also remove any associated container volumes.
     - Only use this argument when you need a clean slate as it removes all associated permant data storage in the volumes.
 
-## Migrations
+## Running the tests
 
-_NOTE_: For each of the following instructions, you must navigate to the `Kinnection/Kinnection-Backend/app` directory.
+### Running in Development Environment
+
+- Navigate to the `Kinnection/Kinnection-Backend/test` directory.
+- Get environment variables needed for local run:
+  - Windows:
+    - `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
+    - `../app/GetEnvVars.ps1`
+  - MAC/Linux:
+    - `chmod +x /path/to/GetEnvVars.sh`
+    - `../app/GetEnvVars.sh`
+- `dotnet test` to run the tests
+
+## Migrations
 
 **Generating a migration**:
 
+- Navigate to the `Kinnection/Kinnection-Backend/app` directory.
 - `dotnet ef migrations add MIGRATION_NAME`
 
 **Applying a migration**:
 
-- _NOTE_: Migrations are auto-applied to the database upon startup of the Kinnection-Backend app based on the `APPLY_MIGRATIONS` environment variable. For more information, please see the [Database Management Vars](#database-management-vars) section.
-- `dotnet ef database update MIGRATION_NAME`
+- Navigate to the `Kinnection/Kinnection-Backend/app` directory.
+- Get environment variables needed for local run:
+  - Windows:
+    - `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
+    - `./GetEnvVars.ps1`
+  - MAC/Linux:
+    - `chmod +x /path/to/GetEnvVars.sh`
+    - `./GetEnvVars.sh`
+- Use `dotnet ef database update MIGRATION_NAME` to migration the database
+
   - You can also use this command to migrate to a previous migration by using the older migration's name.
+
+- _NOTE_: Existing/in-the-pipeline migrations are auto-applied to the database upon startup of the Kinnection-Backend app based on the `APPLY_MIGRATIONS` environment variable. For more information, please see the [Database Management Vars](#database-management-vars) section.
 
 ## Environment Variables
 
@@ -73,8 +102,8 @@ The `.env.template` file contains a template of the `.env` file that should be p
 - `ANG_CONTAINER_PORT`: Port at which the container binds to the overlaying frontend app.
 
 ### Auth Management Vars
+
 - `ACCESS_DURATION`: Number of minutes an Access JWT is valid for before expiration
 - `REFRESH_DURATION`: Number of days a Refresh JWT is valid for before expiration
 - `ISSUER`: The issuer URI for the JWTs
-- `SECRET`: The JWT secret for RS-256 Signing
 - `KEY`: The hash key for passwords
