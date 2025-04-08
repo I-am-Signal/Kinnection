@@ -44,12 +44,12 @@ public class AuthenticatorTest
         //  only the core functionality. If an issue occurs with httpContext,
         //  the endpoint tests would fail but this will pass.
 
-        var Tokens = Authenticator.Authenticate(Context!, Tokens: TestRunner.GetTokens());
+        var (Tokens, _) = Authenticator.Authenticate(Context!, Tokens: TestRunner.GetTokens());
         TestRunner.CheckTokens(Tokens: Tokens);
         TestRunner.SaveTokens(Tokens: Tokens);
 
         // Repeat to check for issues in processing
-        Tokens = Authenticator.Authenticate(Context!, Tokens: Tokens);
+        (Tokens, _)= Authenticator.Authenticate(Context!, Tokens: Tokens);
         TestRunner.CheckTokens(Tokens: Tokens);
         TestRunner.SaveTokens(Tokens: Tokens);
     }

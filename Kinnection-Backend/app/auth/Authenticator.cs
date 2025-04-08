@@ -23,7 +23,7 @@ public static class Authenticator
     /// <returns>Dictionary with "access" token, "refresh" token, and "user_id" values</returns>
     /// <exception cref="AuthenticationException"></exception>
     /// <exception cref="KeyNotFoundException"></exception>
-    public static Dictionary<string, string> Authenticate(
+    public static (Dictionary<string, string> Tokens, int UserID) Authenticate(
         KinnectionContext Context,
         Dictionary<string, string>? Tokens = null,
         HttpContext? httpContext = null
@@ -127,12 +127,14 @@ public static class Authenticator
             httpContext.Response.Headers["X-Refresh-Token"] = RefreshToken;
         }
 
-        return new Dictionary<string, string>
-        {
-            ["access"] = AccessToken,
-            ["refresh"] = RefreshToken,
-            ["user_id"] = UserID.ToString()
-        };
+        return (
+            new Dictionary<string, string>
+            {
+                ["access"] = AccessToken,
+                ["refresh"] = RefreshToken
+            },
+            UserID
+        );
     }
 
     /// <summary>
@@ -345,12 +347,12 @@ public static class Authenticator
         using RSA rsa = RSA.Create();
         rsa.ImportPkcs8PrivateKey(Convert.FromBase64String(
             KeyMaster.GetKeys().Private), out _);
-            
+
         string EncryptedSignature = Base64UrlEncoder.Encode(rsa.SignData(
             Encoding.UTF8.GetBytes($"{EncodedHeader}.{EncodedPayload}"),
             HashAlgorithmName.SHA256,
             RSASignaturePadding.Pkcs1));
-        
+
         // Compile and return token
         return $"{EncodedHeader}.{EncodedPayload}.{EncryptedSignature}";
     }
