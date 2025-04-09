@@ -26,14 +26,14 @@ public class UsersTest
     public async Task PosPostUsers()
     {
         // Make request
-        var RequestContent = new Dictionary<string, string>()
+        var RequestContent = new Dictionary<string, JsonElement>()
         {
-            ["fname"] = UserInfo["fname"].GetString()!,
-            ["lname"] = UserInfo["lname"].GetString()!,
-            ["email"] = UserInfo["email"].GetString()!,
-            ["password"] = KeyMaster.Encrypt(
+            ["fname"] = UserInfo["fname"]!,
+            ["lname"] = UserInfo["lname"]!,
+            ["email"] = UserInfo["email"]!,
+            ["password"] = TestRunner.ToJsonElement(KeyMaster.Encrypt(
                 UserInfo["password"].GetString()!,
-                TestRunner.EncryptionKeys.Public)
+                TestRunner.EncryptionKeys.Public))
         };
 
         HttpResponseMessage Response = await HttpService.PostAsync(
@@ -57,9 +57,9 @@ public class UsersTest
             await Response.Content.ReadAsStringAsync());
 
         output!["id"].GetInt32();
-        Assert.That(output["fname"].GetString(), Is.EqualTo(RequestContent["fname"]));
-        Assert.That(output["lname"].GetString(), Is.EqualTo(RequestContent["lname"]));
-        Assert.That(output["email"].GetString(), Is.EqualTo(RequestContent["email"]));
+        Assert.That(output["fname"].GetString(), Is.EqualTo(RequestContent["fname"].GetString()));
+        Assert.That(output["lname"].GetString(), Is.EqualTo(RequestContent["lname"].GetString()));
+        Assert.That(output["email"].GetString(), Is.EqualTo(RequestContent["email"].GetString()));
 
         // Save information to be used
         UserInfo["id"] = output!["id"];
@@ -73,11 +73,11 @@ public class UsersTest
         UserInfo["lname"] = TestRunner.ToJsonElement("PutLast");
         UserInfo["email"] = TestRunner.ToJsonElement("PutEmail@mail.com");
 
-        var RequestContent = new Dictionary<string, string>()
+        var RequestContent = new Dictionary<string, JsonElement>()
         {
-            ["fname"] = UserInfo["fname"].GetString()!,
-            ["lname"] = UserInfo["lname"].GetString()!,
-            ["email"] = UserInfo["email"].GetString()!
+            ["fname"] = UserInfo["fname"]!,
+            ["lname"] = UserInfo["lname"]!,
+            ["email"] = UserInfo["email"]!
         };
 
         HttpResponseMessage Response = await HttpService.PutAsync(
@@ -100,9 +100,9 @@ public class UsersTest
             await Response.Content.ReadAsStringAsync());
 
         output!["id"].GetInt32();
-        Assert.That(output["fname"].GetString(), Is.EqualTo(RequestContent["fname"]));
-        Assert.That(output["lname"].GetString(), Is.EqualTo(RequestContent["lname"]));
-        Assert.That(output["email"].GetString(), Is.EqualTo(RequestContent["email"]));
+        Assert.That(output["fname"].GetString(), Is.EqualTo(RequestContent["fname"].GetString()));
+        Assert.That(output["lname"].GetString(), Is.EqualTo(RequestContent["lname"].GetString()));
+        Assert.That(output["email"].GetString(), Is.EqualTo(RequestContent["email"].GetString()));
     }
 
     [Test, Order(3)]

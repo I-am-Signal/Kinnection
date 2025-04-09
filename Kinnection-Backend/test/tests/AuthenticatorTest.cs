@@ -2,6 +2,7 @@ using Kinnection;
 using NUnit.Framework;
 using System.Net;
 using System.Security.Authentication;
+using System.Text.Json;
 
 namespace test;
 
@@ -57,11 +58,11 @@ public class AuthenticatorTest
     [Test, Order(3)]
     public async Task NegAuthenticateHttpRequest()
     {
-        var RequestContent = new Dictionary<string, string>()
+        var RequestContent = new Dictionary<string, JsonElement>()
         {
-            ["fname"] = "Auth",
-            ["lname"] = "Test",
-            ["email"] = "AuthTest@mail.com"
+            ["fname"] = TestRunner.ToJsonElement("Auth"),
+            ["lname"] = TestRunner.ToJsonElement("Test"),
+            ["email"] = TestRunner.ToJsonElement("AuthTest@mail.com")
         };
 
         HttpResponseMessage Response = await HttpService.PutAsync(
