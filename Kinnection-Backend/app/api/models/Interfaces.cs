@@ -13,8 +13,8 @@ namespace Kinnection
 
     public interface ITimeline
     {
-        public DateOnly Started { get; set; }
-        public DateOnly Ended { get; set; }
+        public DateOnly? Started { get; set; }
+        public DateOnly? Ended { get; set; }
     }
 
     public interface IEvent
