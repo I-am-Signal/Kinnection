@@ -9,7 +9,7 @@ namespace Kinnection
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required User User { get; set; }
         public required string Name { get; set; }
-        public required int SelfID { get; set; }
+        public int? SelfID { get; set; }
     }
 
     public class Member : BaseMixin

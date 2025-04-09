@@ -50,6 +50,7 @@ class Program
     // Start APIs
     UserAPIs.APIs(app);
     AuthAPIs.APIs(app);
+    TreeAPIs.APIs(app);
     app.Run();
   }
 }
