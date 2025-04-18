@@ -21,14 +21,13 @@ namespace Kinnection
     // Trees/Members
     public class PostMembersRequest
     {
-        public required int Tree_ID { get; set; }
         public required string Fname { get; set; }
         public required string? Mnames { get; set; }
         public required string Lname { get; set; }
         public required bool Sex { get; set; }
-        public required DateOnly DOB { get; set; }
+        public required DateOnly? DOB { get; set; }
         public required string Birthplace { get; set; }
-        public required DateOnly DOD { get; set; }
+        public required DateOnly? DOD { get; set; }
         public required string Deathplace { get; set; }
         public required string Death_Cause { get; set; }
         public required string Ethnicity { get; set; }
@@ -53,8 +52,8 @@ namespace Kinnection
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
-        public required string Organization { get; set; }
-        public required string Description { get; set; }
+        public required string? Organization { get; set; }
+        public required string? Description { get; set; }
     }
 
     public class PutEducationRequest : PostEducationRequest { }
@@ -65,8 +64,8 @@ namespace Kinnection
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
-        public required string Organization { get; set; }
-        public required string Description { get; set; }
+        public required string? Organization { get; set; }
+        public required string? Description { get; set; }
     }
 
     public class PutHobbiesRequest : PostHobbiesRequest { }
@@ -118,8 +117,8 @@ namespace Kinnection
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
-        public required string Organization { get; set; }
-        public required string Description { get; set; }
+        public required string? Organization { get; set; }
+        public required string? Description { get; set; }
     }
 
     public class PutWorkRequest : PostWorkRequest { }

@@ -20,19 +20,19 @@ namespace Kinnection
         public required string Fname { get; set; }
         public required string? Mnames { get; set; }
         public required string Lname { get; set; }
-        public required bool Sex { get; set; }
-        public required DateOnly DOB { get; set; }
-        public required DateOnly DOD { get; set; }
+        public required bool? Sex { get; set; }
+        public required DateOnly? DOB { get; set; }
+        public required DateOnly? DOD { get; set; }
         public required List<GetSpousesResponse> Spouses { get; set; }
         public required List<GetChildrenResponse> Children { get; set; }
     }
     public class GetIndividualMembersResponse : GetMembersResponse
     {
-        public required string Birthplace { get; set; }
-        public required string Deathplace { get; set; }
-        public required string Death_Cause { get; set; }
-        public required string Ethnicity { get; set; }
-        public required string Biography { get; set; }
+        public required string? Birthplace { get; set; }
+        public required string? Deathplace { get; set; }
+        public required string? Death_Cause { get; set; }
+        public required string? Ethnicity { get; set; }
+        public required string? Biography { get; set; }
         public required List<GetResidencesResponse> Residences { get; set; }
         public required List<GetEmailsResponse> Emails { get; set; }
         public required List<GetPhonesResponse> Phones { get; set; }
@@ -62,8 +62,8 @@ namespace Kinnection
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
-        public required string Organization { get; set; }
-        public required string Description { get; set; }
+        public required string? Organization { get; set; }
+        public required string? Description { get; set; }
     }
 
     public class GetAllEducationResponse
@@ -83,8 +83,8 @@ namespace Kinnection
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
-        public required string Organization { get; set; }
-        public required string Description { get; set; }
+        public required string? Organization { get; set; }
+        public required string? Description { get; set; }
     }
 
     public class GetAllHobbiesResponse
@@ -123,9 +123,9 @@ namespace Kinnection
     {
         public required int ID { get; set; }
         public required string Addr_Line_1 { get; set; }
-        public required string Addr_Line_2 { get; set; }
+        public required string? Addr_Line_2 { get; set; }
         public required string City { get; set; }
-        public required string State { get; set; }
+        public required string? State { get; set; }
         public required string Country { get; set; }
     }
 
@@ -156,8 +156,8 @@ namespace Kinnection
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
-        public required string Organization { get; set; }
-        public required string Description { get; set; }
+        public required string? Organization { get; set; }
+        public required string? Description { get; set; }
     }
 
     public class GetAllWorkResponse
