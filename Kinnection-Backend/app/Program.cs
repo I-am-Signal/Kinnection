@@ -51,6 +51,7 @@ class Program
     UserAPIs.APIs(app);
     AuthAPIs.APIs(app);
     TreeAPIs.APIs(app);
+    MemberAPIs.APIs(app);
     app.Run();
   }
 }
