@@ -113,6 +113,63 @@ public static class TestRunner
         return URI;
     }
 
+    /// <summary>
+    /// Asserts that all values of Object are in and equivalent to that of Expected
+    /// </summary>
+    /// <param name="Object"></param>
+    /// <param name="Expected"></param>
+    /// <exception cref="ArgumentException"></exception>
+    public static void EvaluateJsonElementObject(
+        JsonElement Object, JsonElement Expected)
+    {
+        switch (Object.ValueKind)
+        {
+            case JsonValueKind.String:
+                Assert.That(Object.GetString(), Is.EqualTo(Expected.GetString()));
+                break;
+            case JsonValueKind.Number:
+                Assert.That(Object.GetInt32(), Is.EqualTo(Expected.GetInt32()));
+                break;
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+                Assert.That(Object.GetBoolean(), Is.EqualTo(Expected.GetBoolean()));
+                break;
+            case JsonValueKind.Null:
+                Assert.That(Expected.ValueKind, Is.EqualTo(JsonValueKind.Null));
+                break;
+            case JsonValueKind.Array:
+                var ObjArr = Object.EnumerateArray();
+                var ExpArr = Expected.EnumerateArray();
+
+                Assert.That(ObjArr.Count(), Is.EqualTo(ExpArr.Count()));
+
+                var ObjEnum = ObjArr.GetEnumerator();
+                var ExpEnum = ExpArr.GetEnumerator();
+
+                while (ObjEnum.MoveNext() && ExpEnum.MoveNext())
+                    EvaluateJsonElementObject(ObjEnum.Current, ExpEnum.Current);
+                break;
+            case JsonValueKind.Object:
+                bool IDWasPresent = false;
+                foreach (var property in Object.EnumerateObject())
+                {
+                    if (property.Name == "id")
+                    {
+                        IDWasPresent = true;
+                        Assert.That(property.Value.ValueKind, Is.EqualTo(JsonValueKind.Number));
+                    }
+                    else
+                        EvaluateJsonElementObject(
+                            property.Value, Expected.GetProperty(property.Name));
+                    
+                    Assert.That(IDWasPresent, Is.True);
+                }
+                break;
+            default:
+                throw new ArgumentException("ValueKind of JsonElement is not valid");
+        }
+    }
+
     public static void SaveTokens(
         HttpResponseHeaders? Headers = null,
         Dictionary<string, string>? Tokens = null)
