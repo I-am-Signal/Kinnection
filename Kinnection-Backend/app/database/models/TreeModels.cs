@@ -21,10 +21,10 @@ namespace Kinnection
         public required string Fname { get; set; }
         public required string? Mnames { get; set; }
         public required string Lname { get; set; }
-        public required bool Sex { get; set; }
-        public required DateOnly DOB { get; set; }
+        public required bool? Sex { get; set; }
+        public required DateOnly? DOB { get; set; }
         public required string? Birthplace { get; set; }
-        public required DateOnly DOD { get; set; }
+        public required DateOnly? DOD { get; set; }
         public required string? Deathplace { get; set; }
         public required string? CauseOfDeath { get; set; }
         public required string? Ethnicity { get; set; }
