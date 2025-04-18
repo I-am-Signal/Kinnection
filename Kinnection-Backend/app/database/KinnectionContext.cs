@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Kinnection
 {
@@ -7,9 +8,9 @@ namespace Kinnection
         public KinnectionContext(DbContextOptions<KinnectionContext> options) : base(options) { }
 
         public DbSet<User> Users { get; set; }
-        
+
         public DbSet<Authentication> Authentications { get; set; }
-        
+
         public DbSet<Password> Passwords { get; set; }
 
         public DbSet<Tree> Trees { get; set; }
@@ -33,6 +34,11 @@ namespace Kinnection
         public DbSet<Spouse> Spouses { get; set; }
 
         public DbSet<Work> Works { get; set; }
+
+        private ValueConverter DateOnlyConverter = new ValueConverter<DateOnly?, DateTime?>(
+            v => v.HasValue ? v.Value.ToDateTime(TimeOnly.MinValue) : null,
+            v => v.HasValue ? DateOnly.FromDateTime(v.Value) : null
+        );
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,60 +73,99 @@ namespace Kinnection
             });
 
             modelBuilder.Entity<Member>(entity =>
-            {
+            { 
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Tree);
+                entity.HasOne(e => e.Tree);
+                entity.Property(e => e.DOB)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
+                entity.Property(e => e.DOD)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
             });
 
             // Relationship Models
             modelBuilder.Entity<Education>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Member);
+                entity.HasOne(e => e.Member);
+                entity.Property(e => e.Started)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
+                entity.Property(e => e.Ended)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
             });
 
             modelBuilder.Entity<Hobby>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Member);
+                entity.HasOne(e => e.Member);
+                entity.Property(e => e.Started)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
+                entity.Property(e => e.Ended)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
             });
 
             modelBuilder.Entity<MemberEmail>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Member);
+                entity.HasOne(e => e.Member);
             });
 
             modelBuilder.Entity<MemberPhone>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Member);
+                entity.HasOne(e => e.Member);
             });
 
             modelBuilder.Entity<ParentalRelationship>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Parent);
-                entity.HasOne(d => d.Child);
+                entity.HasOne(e => e.Parent);
+                entity.HasOne(e => e.Child);
+                entity.Property(e => e.Adopted)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
             });
 
             modelBuilder.Entity<Residence>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Member);
+                entity.HasOne(e => e.Member);
+                entity.Property(e => e.Started)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
+                entity.Property(e => e.Ended)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
             });
 
             modelBuilder.Entity<Spouse>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Husband);
-                entity.HasOne(d => d.Wife);
+                entity.HasOne(e => e.Husband);
+                entity.HasOne(e => e.Wife);
+                entity.Property(e => e.Started)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
+                entity.Property(e => e.Ended)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
             });
 
             modelBuilder.Entity<Work>(entity =>
             {
                 entity.HasKey(e => e.ID);
-                entity.HasOne(d => d.Member);
+                entity.HasOne(e => e.Member);
+                entity.Property(e => e.Started)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
+                entity.Property(e => e.Ended)
+                    .HasConversion(DateOnlyConverter)
+                    .HasColumnType("date");
             });
         }
     }
