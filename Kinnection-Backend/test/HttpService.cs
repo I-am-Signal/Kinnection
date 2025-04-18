@@ -40,50 +40,6 @@ public static class HttpService
         return URL.ToString();
     }
 
-    private static string JSONStringifyDictionary(
-    Dictionary<string, JsonElement> content)
-    {
-        var output = new StringBuilder();
-        output.Append('{');
-
-        int count = 0;
-        foreach (var kvp in content)
-        {
-            string key = kvp.Key;
-            JsonElement value = kvp.Value;
-
-            output.Append($"\"{key}\": ");
-
-            switch (value.ValueKind)
-            {
-                case JsonValueKind.String:
-                    output.Append($"\"{value.GetString()}\"");
-                    break;
-                case JsonValueKind.Number:
-                case JsonValueKind.True:
-                case JsonValueKind.False:
-                    output.Append(value.ToString());
-                    break;
-                case JsonValueKind.Null:
-                    output.Append("null");
-                    break;
-                case JsonValueKind.Object:
-                case JsonValueKind.Array:
-                    output.Append(value.GetRawText());
-                    break;
-                default:
-                    output.Append("\"\"");
-                    break;
-            }
-
-            if (++count < content.Count)
-                output.Append(", ");
-        }
-
-        output.Append('}');
-        return output.ToString();
-    }
-
     public static async Task<HttpResponseMessage> GetAsync(
         string URI,
         string Parameter = "",
@@ -110,7 +66,7 @@ public static class HttpService
             HttpMethod.Post,
             AppendArguments(URI + Parameter, Arguments))
         {
-            Content = new StringContent(JSONStringifyDictionary(Content), Encoding.UTF8, ContentType)
+            Content = new StringContent(JsonSerializer.Serialize(Content), Encoding.UTF8, ContentType)
         };
         AddHeaders(Request, Headers);
         return await _client.SendAsync(Request);
@@ -128,7 +84,7 @@ public static class HttpService
             HttpMethod.Put,
             AppendArguments(URI + Parameter, Arguments))
         {
-            Content = new StringContent(JSONStringifyDictionary(Content), Encoding.UTF8, ContentType)
+            Content = new StringContent(JsonSerializer.Serialize(Content), Encoding.UTF8, ContentType)
         };
         AddHeaders(Request, Headers);
         return await _client.SendAsync(Request);
