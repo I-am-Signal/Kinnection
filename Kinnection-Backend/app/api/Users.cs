@@ -71,14 +71,14 @@ static class UserAPIs
             }
             catch (ArgumentException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with POST /users/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 400);
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with POST /users/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -86,14 +86,14 @@ static class UserAPIs
             }
             catch (InvalidOperationException i)
             {
-                Console.WriteLine(i);
+                Console.WriteLine($"Issue with POST /users/: {i}");
                 return Results.Problem(
                     detail: i.Message,
                     statusCode: 409);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with POST /users/: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -131,7 +131,7 @@ static class UserAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with PUT /users/{{id}}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -139,7 +139,7 @@ static class UserAPIs
             }
             catch (InvalidOperationException i)
             {
-                Console.WriteLine(i);
+                Console.WriteLine($"Issue with PUT /users/{{id}}: {i}");
                 return Results.Problem(
                     detail: i.Message,
                     statusCode: 404
@@ -147,7 +147,7 @@ static class UserAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with PUT /users/{{id}}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -177,7 +177,7 @@ static class UserAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with GET /users/{{id}}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -185,7 +185,7 @@ static class UserAPIs
             }
             catch (InvalidOperationException i)
             {
-                Console.WriteLine(i);
+                Console.WriteLine($"Issue with GET /users/{{id}}: {i}");
                 return Results.Problem(
                     detail: i.Message,
                     statusCode: 404
@@ -193,7 +193,7 @@ static class UserAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with GET /users/{{id}}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -228,7 +228,7 @@ static class UserAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with DELETE /users/{{id}}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -236,7 +236,7 @@ static class UserAPIs
             }
             catch (InvalidOperationException i)
             {
-                Console.WriteLine(i);
+                Console.WriteLine($"Issue with DELETE /users/{{id}}: {i}");
                 return Results.Problem(
                     detail: i.Message,
                     statusCode: 404
@@ -244,7 +244,7 @@ static class UserAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with DELETE /users/{{id}}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })

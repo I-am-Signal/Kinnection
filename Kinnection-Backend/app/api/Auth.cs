@@ -41,28 +41,28 @@ static class AuthAPIs
             }
             catch (InvalidCredentialException c)
             {
-                Console.WriteLine(c);
+                Console.WriteLine($"Issue with POST /auth/login/: {c}");
                 return Results.Problem(
                     detail: c.Message,
                     statusCode: 401);
             }
             catch (KeyNotFoundException k)
             {
-                Console.WriteLine(k);
+                Console.WriteLine($"Issue with POST /auth/login/: {k}");
                 return Results.Problem(
                     detail: k.Message,
                     statusCode: 404);
             }
             catch (ApplicationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with POST /auth/login/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 500);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with POST /auth/login/: {e}");
                 return Results.Problem(
                     statusCode: 500);
             }
@@ -89,7 +89,7 @@ static class AuthAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with POST /auth/logout/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -97,7 +97,7 @@ static class AuthAPIs
             }
             catch (KeyNotFoundException k)
             {
-                Console.WriteLine(k);
+                Console.WriteLine($"Issue with POST /auth/logout/: {k}");
                 return Results.Problem(
                     detail: k.Message,
                     statusCode: 404
@@ -105,7 +105,7 @@ static class AuthAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with POST /auth/logout/: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -124,7 +124,7 @@ static class AuthAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with GET /auth/public/: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -145,7 +145,7 @@ static class AuthAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with POST /auth/verify/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -153,7 +153,7 @@ static class AuthAPIs
             }
             catch (KeyNotFoundException k)
             {
-                Console.WriteLine(k);
+                Console.WriteLine($"Issue with POST /auth/verify/: {k}");
                 return Results.Problem(
                     detail: k.Message,
                     statusCode: 404
@@ -161,7 +161,7 @@ static class AuthAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with POST /auth/verify/: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })

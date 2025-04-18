@@ -43,14 +43,14 @@ static class TreeAPIs
             }
             catch (ArgumentException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with POST /trees/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 400);
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with POST /trees/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -58,14 +58,14 @@ static class TreeAPIs
             }
             catch (KeyNotFoundException k)
             {
-                Console.WriteLine(k);
+                Console.WriteLine($"Issue with POST /trees/: {k}");
                 return Results.Problem(
                     detail: k.Message,
                     statusCode: 409);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with POST /trees/: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -73,7 +73,7 @@ static class TreeAPIs
         .WithOpenApi();
 
 
-        app.MapPut("/trees/{id}", (int id, HttpContext httpContext, PutTreesRequest request) =>
+        app.MapPut("/trees/{tree_id}", (int tree_id, HttpContext httpContext, PutTreesRequest request) =>
         {
             try
             {
@@ -84,7 +84,7 @@ static class TreeAPIs
 
                 // Modify and save user
                 var Existing = Context.Trees
-                    .First(t => t.ID == id);
+                    .First(t => t.ID == tree_id);
 
                 // Validate required fields
                 if (string.IsNullOrEmpty(request.Name))
@@ -105,7 +105,7 @@ static class TreeAPIs
             }
             catch (ArgumentException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with PUT /trees/{{tree_id}}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 400
@@ -113,7 +113,7 @@ static class TreeAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with PUT /trees/{{tree_id}}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -121,7 +121,7 @@ static class TreeAPIs
             }
             catch (Exception e) when (e is ArgumentNullException || e is InvalidOperationException)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with PUT /trees/{{tree_id}}: {e}");
                 return Results.Problem(
                     detail: e.Message,
                     statusCode: 404
@@ -129,14 +129,14 @@ static class TreeAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with PUT /trees/{{tree_id}}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
         .WithName("PutTree")
         .WithOpenApi();
 
-        app.MapGet("/trees/{id}", (int id, HttpContext httpContext) =>
+        app.MapGet("/trees/{tree_id}", (int tree_id, HttpContext httpContext) =>
         {
             try
             {
@@ -148,7 +148,7 @@ static class TreeAPIs
                 // Compile response
                 var Members = Context.Members
                     .Include(member => member.Tree)
-                    .Where(member => member.Tree.ID == id)
+                    .Where(member => member.Tree.ID == tree_id)
                     .Select(member => new GetMembersResponse
                     {
                         ID = member.ID,
@@ -191,12 +191,12 @@ static class TreeAPIs
                         Member_Self_ID = tree.SelfID,
                         Members = Members
                     })
-                    .Single(u => u.ID == id)
+                    .Single(u => u.ID == tree_id)
                 );
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with GET /trees/{{tree_id}}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -204,7 +204,7 @@ static class TreeAPIs
             }
             catch (InvalidOperationException i)
             {
-                Console.WriteLine(i);
+                Console.WriteLine($"Issue with GET /trees/{{tree_id}}: {i}");
                 return Results.Problem(
                     detail: i.Message,
                     statusCode: 404
@@ -212,7 +212,7 @@ static class TreeAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with GET /trees/{{tree_id}}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -243,7 +243,7 @@ static class TreeAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with GET /trees/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -251,7 +251,7 @@ static class TreeAPIs
             }
             catch (InvalidOperationException i)
             {
-                Console.WriteLine(i);
+                Console.WriteLine($"Issue with GET /trees/: {i}");
                 return Results.Problem(
                     detail: i.Message,
                     statusCode: 404
@@ -259,14 +259,14 @@ static class TreeAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with GET /trees/: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
         .WithName("GetTrees")
         .WithOpenApi();
 
-        app.MapDelete("/trees/{id}", (int id, HttpContext httpContext) =>
+        app.MapDelete("/trees/{tree_id}", (int tree_id, HttpContext httpContext) =>
         {
             try
             {
@@ -277,8 +277,8 @@ static class TreeAPIs
 
                 // Find the user to delete
                 var TreeToDelete = Context.Trees
-                    .FirstOrDefault(t => t.ID == id) ??
-                        throw new InvalidOperationException($"Tree with ID {id} not found.");
+                    .FirstOrDefault(t => t.ID == tree_id) ??
+                        throw new InvalidOperationException($"Tree with ID {tree_id} not found.");
 
                 Context.Trees.Remove(TreeToDelete);
                 Context.SaveChanges();
@@ -288,7 +288,7 @@ static class TreeAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine(a);
+                Console.WriteLine($"Issue with DELETE /trees/{{tree_id}}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -296,7 +296,7 @@ static class TreeAPIs
             }
             catch (InvalidOperationException i)
             {
-                Console.WriteLine(i);
+                Console.WriteLine($"Issue with DELETE /trees/{{tree_id}}: {i}");
                 return Results.Problem(
                     detail: i.Message,
                     statusCode: 404
@@ -304,7 +304,7 @@ static class TreeAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine($"Issue with DELETE /trees/{{tree_id}}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
