@@ -42,10 +42,10 @@ class Program
 
       if (MigrationContext.Database.GetPendingMigrations().Any())
         MigrationContext.Database.Migrate();
+      else if (!MigrationContext.Database.GetAppliedMigrations().Any())
+        throw new InvalidOperationException(
+          "No EF Core Migrations found. Create at least one migration before running the application.");
     }
-
-    // Ensure encryption keys exist
-    KeyMaster.GetKeys();
 
     // Start APIs
     UserAPIs.APIs(app);
@@ -53,5 +53,8 @@ class Program
     TreeAPIs.APIs(app);
     MemberAPIs.APIs(app);
     app.Run();
+
+    // Ensure encryption keys exist
+    KeyMaster.GetKeys();
   }
 }
