@@ -125,27 +125,27 @@ public static class TestRunner
         switch (Object.ValueKind)
         {
             case JsonValueKind.String:
-                Console.WriteLine($"Object: {Object.GetString()}, Expected: {Expected.GetString()}");
+                Console.WriteLine($"Object: \"{Object.GetString()}\", Expected: \"{Expected.GetString()}\"");
                 Assert.That(Object.GetString(), Is.EqualTo(Expected.GetString()));
                 break;
             case JsonValueKind.Number:
-                Console.WriteLine($"Object: {Object.GetInt32()}, Expected: {Expected.GetInt32()}");
+                Console.WriteLine($"Object: \"{Object.GetInt32()}\", Expected: \"{Expected.GetInt32()}\"");
                 Assert.That(Object.GetInt32(), Is.EqualTo(Expected.GetInt32()));
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
-                Console.WriteLine($"Object: {Object.GetBoolean()}, Expected: {Expected.GetBoolean()}");
+                Console.WriteLine($"Object: \"{Object.GetBoolean()}\", Expected: \"{Expected.GetBoolean()}\"");
                 Assert.That(Object.GetBoolean(), Is.EqualTo(Expected.GetBoolean()));
                 break;
             case JsonValueKind.Null:
-                Console.WriteLine($"Object: {Object.ValueKind}, Expected: {Expected.ValueKind}");
+                Console.WriteLine($"Object: \"{Object.ValueKind}\", Expected: \"{Expected.ValueKind}\"");
                 Assert.That(Expected.ValueKind, Is.EqualTo(JsonValueKind.Null));
                 break;
             case JsonValueKind.Array:
                 var ObjArr = Object.EnumerateArray();
                 var ExpArr = Expected.EnumerateArray();
 
-                Console.WriteLine($"Object: {ObjArr.Count()}, Expected: {ExpArr.Count()}");
+                Console.WriteLine($"Object: \"{ObjArr.Count()}\", Expected: \"{ExpArr.Count()}\"");
                 Assert.That(ObjArr.Count(), Is.EqualTo(ExpArr.Count()));
 
                 var ObjEnum = ObjArr.GetEnumerator();
@@ -165,8 +165,8 @@ public static class TestRunner
                     }
                     else
                     {
-                        Console.WriteLine($"Object: Key: {property.Name}, Value: {property.Value}");
-                        Console.WriteLine($"Expected-Value: {Expected.GetProperty(property.Name)}");
+                        Console.WriteLine($"Object: \"{property.Name}\":\"{property.Value}\"");
+                        Console.WriteLine($"Expected-Value: \"{Expected.GetProperty(property.Name)}\"");
                         EvaluateJsonElementObject(
                             property.Value, Expected.GetProperty(property.Name));
                     }
