@@ -221,10 +221,10 @@ public class TreesTest
         TestRunner.SaveTokens(Response.Headers);
 
         // Evaluate content
-        var output = JsonSerializer.Deserialize<List<JsonElement>>(
+        var output = JsonSerializer.Deserialize<JsonElement>(
             await Response.Content.ReadAsStringAsync());
 
-        foreach (var Element in output!)
+        foreach (var Element in output!.GetProperty("trees").EnumerateArray())
         {
             Element.GetProperty("id").GetInt32();
             Element.GetProperty("name").GetString();
