@@ -31,7 +31,7 @@ public class UsersTest
             ["fname"] = UserInfo["fname"]!,
             ["lname"] = UserInfo["lname"]!,
             ["email"] = UserInfo["email"]!,
-            ["password"] = TestRunner.ToJsonElement(KeyMaster.Encrypt(
+            ["password"] = JsonSerializer.SerializeToElement(KeyMaster.Encrypt(
                 UserInfo["password"].GetString()!,
                 TestRunner.EncryptionKeys.Public))
         };
@@ -69,9 +69,9 @@ public class UsersTest
     public async Task PosPutUsers()
     {
         // Make request
-        UserInfo["fname"] = TestRunner.ToJsonElement("PutFirst");
-        UserInfo["lname"] = TestRunner.ToJsonElement("PutLast");
-        UserInfo["email"] = TestRunner.ToJsonElement("PutEmail@mail.com");
+        UserInfo["fname"] = JsonSerializer.SerializeToElement("PutFirst");
+        UserInfo["lname"] = JsonSerializer.SerializeToElement("PutLast");
+        UserInfo["email"] = JsonSerializer.SerializeToElement("PutEmail@mail.com");
 
         var RequestContent = new Dictionary<string, JsonElement>()
         {

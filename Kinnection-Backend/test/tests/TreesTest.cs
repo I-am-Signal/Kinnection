@@ -33,7 +33,7 @@ public class TreesTest
             ["fname"] = UserInfo!["fname"]!,
             ["lname"] = UserInfo["lname"]!,
             ["email"] = UserInfo["email"]!,
-            ["password"] = TestRunner.ToJsonElement(KeyMaster.Encrypt(
+            ["password"] = JsonSerializer.SerializeToElement(KeyMaster.Encrypt(
                 UserInfo["password"].GetString()!,
                 TestRunner.EncryptionKeys.Public))
         };
@@ -115,8 +115,8 @@ public class TreesTest
     public async Task PosPutTrees()
     {
         // Make request
-        TreeInfo["name"] = TestRunner.ToJsonElement("TreePut");
-        TreeInfo["member_self_id"] = TestRunner.ToJsonElement(0);
+        TreeInfo["name"] = JsonSerializer.SerializeToElement("TreePut");
+        TreeInfo["member_self_id"] = JsonSerializer.SerializeToElement(0);
 
         var RequestContent = new Dictionary<string, JsonElement>()
         {

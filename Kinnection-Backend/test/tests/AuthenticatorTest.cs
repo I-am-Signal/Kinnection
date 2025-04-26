@@ -60,9 +60,9 @@ public class AuthenticatorTest
     {
         var RequestContent = new Dictionary<string, JsonElement>()
         {
-            ["fname"] = TestRunner.ToJsonElement("Auth"),
-            ["lname"] = TestRunner.ToJsonElement("Test"),
-            ["email"] = TestRunner.ToJsonElement("AuthTest@mail.com")
+            ["fname"] = JsonSerializer.SerializeToElement("Auth"),
+            ["lname"] = JsonSerializer.SerializeToElement("Test"),
+            ["email"] = JsonSerializer.SerializeToElement("AuthTest@mail.com")
         };
 
         HttpResponseMessage Response = await HttpService.PutAsync(

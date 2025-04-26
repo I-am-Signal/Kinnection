@@ -195,16 +195,4 @@ public static class TestRunner
         else
             throw new Exception("Provide either a token dictionary or the headers!");
     }
-
-    /// <summary>
-    /// Returns the JsonElement version of the parameter.
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public static JsonElement ToJsonElement<T>(T value)
-    {
-        return JsonSerializer.Deserialize<JsonElement>(
-            JsonSerializer.Serialize(value)
-        );
-    }
 }
