@@ -12,7 +12,7 @@
 # Load environment variables from the .env file
 param( [string]$e )
 
-$envFile = "..\Docker\.env"
+$envFile = "..\..\Docker\.env"
 if ($e) { $envFile = $e }
 
 # Read the .env file line by line and set environment variables
