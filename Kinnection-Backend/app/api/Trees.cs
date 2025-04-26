@@ -96,12 +96,13 @@ static class TreeAPIs
                 Context.SaveChanges();
 
                 // Compile response
-                return Results.Ok(new GetTreesResponse
-                {
-                    ID = Existing.ID,
-                    Name = Existing.Name,
-                    Member_Self_ID = Existing.SelfID
-                });
+                return Results.Ok(
+                    new GetTreesResponse
+                    {
+                        ID = Existing.ID,
+                        Name = Existing.Name,
+                        Member_Self_ID = Existing.SelfID
+                    });
             }
             catch (ArgumentException a)
             {
@@ -149,7 +150,7 @@ static class TreeAPIs
                 var Members = Context.Members
                     .Include(member => member.Tree)
                     .Where(member => member.Tree.ID == tree_id)
-                    .Select(member => new GetMembersResponse
+                    .Select(member => new GetTreesMembersResponse
                     {
                         ID = member.ID,
                         Fname = member.Fname,
@@ -182,17 +183,16 @@ static class TreeAPIs
                     })
                     .ToList();
 
+                var Tree = Context.Trees.Where(t => t.ID == tree_id).First();
+
                 return Results.Ok(
-                    Context.Trees
-                    .Select(tree => new GetIndividualTreesResponse
+                    new GetIndividualTreesResponse
                     {
-                        ID = tree.ID,
-                        Name = tree.Name,
-                        Member_Self_ID = tree.SelfID,
+                        ID = Tree.ID,
+                        Name = Tree.Name,
+                        Member_Self_ID = Tree.SelfID,
                         Members = Members
-                    })
-                    .Single(u => u.ID == tree_id)
-                );
+                    });
             }
             catch (AuthenticationException a)
             {
@@ -230,15 +230,18 @@ static class TreeAPIs
 
                 // Compile response
                 return Results.Ok(
-                    Context.Trees.Include(t => t.User)
-                    .Where(t => t.User.ID == UserID)
-                    .Select(tree => new GetTreesResponse
+                    new GetAllTreesResponse
                     {
-                        ID = tree.ID,
-                        Name = tree.Name,
-                        Member_Self_ID = tree.SelfID
-                    })
-                    .ToList()
+                        Trees = Context.Trees.Include(t => t.User)
+                            .Where(t => t.User.ID == UserID)
+                            .Select(tree => new GetTreesResponse
+                            {
+                                ID = tree.ID,
+                                Name = tree.Name,
+                                Member_Self_ID = tree.SelfID
+                            })
+                            .ToList()
+                    }
                 );
             }
             catch (AuthenticationException a)

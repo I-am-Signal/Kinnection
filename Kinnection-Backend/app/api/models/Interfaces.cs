@@ -6,6 +6,11 @@ namespace Kinnection
         public int ID { get; set; }
     }
 
+    public interface IOptionalID
+    {
+        public int? ID { get; set; }
+    }
+
     public interface IPrimary
     {
         public bool Primary { get; set; }

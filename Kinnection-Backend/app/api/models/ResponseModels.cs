@@ -8,9 +8,28 @@ namespace Kinnection
         public required int? Member_Self_ID { get; set; }
     }
 
+    public class GetAllTreesResponse
+    {
+        public required List<GetTreesResponse> Trees { get; set; }
+    }
+
     public class GetIndividualTreesResponse : GetTreesResponse
     {
-        public required List<GetMembersResponse> Members { get; set; }
+        public required List<GetTreesMembersResponse> Members { get; set; }
+    }
+
+    
+    public class GetTreesMembersResponse : IID
+    {
+        public required int ID { get; set; }
+        public required string Fname { get; set; }
+        public required string? Mnames { get; set; }
+        public required string Lname { get; set; }
+        public required bool Sex { get; set; }
+        public required DateOnly? DOB { get; set; }
+        public required DateOnly? DOD { get; set; }
+        public required List<GetSpousesResponse> Spouses { get; set; }
+        public required List<GetChildrenResponse> Children { get; set; }
     }
 
     // Trees/Members
@@ -20,25 +39,25 @@ namespace Kinnection
         public required string Fname { get; set; }
         public required string? Mnames { get; set; }
         public required string Lname { get; set; }
-        public required bool? Sex { get; set; }
+        public required bool Sex { get; set; }
         public required DateOnly? DOB { get; set; }
+        public required string? Birthplace { get; set; }
         public required DateOnly? DOD { get; set; }
-        public required List<GetSpousesResponse> Spouses { get; set; }
-        public required List<GetChildrenResponse> Children { get; set; }
+        public required string? Deathplace { get; set; }
+        public required string? Death_cause { get; set; }
+        public required string? Ethnicity { get; set; }
+        public required string? Biography { get; set; }
     }
     public class GetIndividualMembersResponse : GetMembersResponse
     {
-        public required string? Birthplace { get; set; }
-        public required string? Deathplace { get; set; }
-        public required string? Death_Cause { get; set; }
-        public required string? Ethnicity { get; set; }
-        public required string? Biography { get; set; }
-        public required List<GetResidencesResponse> Residences { get; set; }
+        public required List<GetChildrenResponse> Children { get; set; }
+        public required List<GetEducationResponse> Education_history { get; set; }
         public required List<GetEmailsResponse> Emails { get; set; }
-        public required List<GetPhonesResponse> Phones { get; set; }
-        public required List<GetWorkResponse> Work_History { get; set; }
-        public required List<GetEducationResponse> Education_History { get; set; }
         public required List<GetHobbiesResponse> Hobbies { get; set; }
+        public required List<GetPhonesResponse> Phones { get; set; }
+        public required List<GetResidencesResponse> Residences { get; set; }
+        public required List<GetSpousesResponse> Spouses { get; set; }
+        public required List<GetWorkResponse> Work_history { get; set; }
     }
 
     // Trees/Members/Children
@@ -162,7 +181,7 @@ namespace Kinnection
 
     public class GetAllWorkResponse
     {
-        public required List<GetWorkResponse> Work_History { get; set; }
+        public required List<GetWorkResponse> Work_history { get; set; }
     }
 
     // Users
