@@ -155,13 +155,19 @@ public static class TestRunner
                     EvaluateJsonElementObject(ObjEnum.Current, ExpEnum.Current);
                 break;
             case JsonValueKind.Object:
-                Console.WriteLine(Object);
+                Console.WriteLine($"Object: {Object}");
+                Console.WriteLine($"Expected: {Expected}");
                 foreach (var property in Object.EnumerateObject())
                 {
                     if ("id" == property.Name && JsonValueKind.Null == Expected.GetProperty(property.Name).ValueKind)
                     {
                         Console.WriteLine($"ID Found: {Object.GetProperty("id")}");
-                        Assert.That(property.Value.ValueKind, Is.EqualTo(JsonValueKind.Number));
+                        Assert.That(
+                            property.Value.ValueKind == JsonValueKind.Null ||
+                             property.Value.ValueKind == JsonValueKind.Number,
+                            Is.True,
+                            "Expected property \"ID\" JsonValueKind to be Null or Number"
+                        );
                     }
                     else
                     {

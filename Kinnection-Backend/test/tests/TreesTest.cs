@@ -105,7 +105,7 @@ public class TreesTest
 
         output!["id"].GetInt32();
         Assert.That(output["name"].GetString(), Is.EqualTo(RequestContent["name"].GetString()));
-        Assert.That(output["member_Self_ID"].ValueKind, Is.EqualTo(JsonValueKind.Null));
+        Assert.That(output["member_self_id"].ValueKind, Is.EqualTo(JsonValueKind.Null));
 
         // Save information to be used
         TreeInfo["id"] = output!["id"];
@@ -150,7 +150,7 @@ public class TreesTest
 
         output!["id"].GetInt32();
         Assert.That(output["name"].GetString(), Is.EqualTo(RequestContent["name"].GetString()));
-        Assert.That(output["member_Self_ID"].GetInt32(), Is.EqualTo(RequestContent["member_self_id"].GetInt32()));
+        Assert.That(output["member_self_id"].GetInt32(), Is.EqualTo(RequestContent["member_self_id"].GetInt32()));
     }
 
     [Test, Order(3)]
@@ -176,7 +176,7 @@ public class TreesTest
 
         Assert.That(output!["id"].GetInt32(), Is.EqualTo(TreeInfo["id"].GetInt32()));
         Assert.That(output["name"].GetString(), Is.EqualTo(TreeInfo["name"].GetString()));
-        Assert.That(output["member_Self_ID"].GetInt32(), Is.EqualTo(TreeInfo["member_self_id"].GetInt32()));
+        Assert.That(output["member_self_id"].GetInt32(), Is.EqualTo(TreeInfo["member_self_id"].GetInt32()));
         foreach (JsonElement Element in output["members"].EnumerateArray())
         {
             Element.GetProperty("id").GetInt32();
@@ -228,7 +228,7 @@ public class TreesTest
         {
             Element.GetProperty("id").GetInt32();
             Element.GetProperty("name").GetString();
-            var MemSelfID = Element.GetProperty("member_Self_ID");
+            var MemSelfID = Element.GetProperty("member_self_id");
             if (MemSelfID.ValueKind != JsonValueKind.Null)
                 MemSelfID.GetInt32();
         }

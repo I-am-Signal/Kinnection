@@ -15,14 +15,14 @@ static class MemberAPIs
     {
         return new GetIndividualMembersResponse
         {
-            ID = member.ID,
+            Id = member.ID,
             Fname = member.Fname,
             Mnames = member.Mnames,
             Lname = member.Lname,
             Sex = member.Sex,
-            DOB = member.DOB,
+            Dob = member.DOB,
             Birthplace = member.Birthplace,
-            DOD = member.DOD,
+            Dod = member.DOD,
             Deathplace = member.Deathplace,
             Death_cause = member.CauseOfDeath,
             Ethnicity = member.Ethnicity,
@@ -30,19 +30,19 @@ static class MemberAPIs
             Children = Context.ParentalRelationships
                 .Select(pcr => new GetChildrenResponse
                 {
-                    ID = pcr.ID,
-                    Parent_ID = pcr.Parent.ID,
-                    Child_ID = pcr.Child.ID,
+                    Id = pcr.ID,
+                    Parent_id = pcr.Parent.ID,
+                    Child_id = pcr.Child.ID,
                     Adopted = pcr.Adopted
                 })
-                .Where(pcr => pcr.Parent_ID == member.ID || pcr.Child_ID == member.ID)
+                .Where(pcr => pcr.Parent_id == member.ID || pcr.Child_id == member.ID)
                 .ToList(),
             Education_history = Context.Educations
                 .Include(education => education.Member)
                 .Where(education => education.Member.ID == member.ID)
                 .Select(education => new GetEducationResponse
                 {
-                    ID = education.ID,
+                    Id = education.ID,
                     Started = education.Started,
                     Ended = education.Ended,
                     Title = education.Title,
@@ -55,7 +55,7 @@ static class MemberAPIs
                 .Where(email => email.Member.ID == member.ID)
                 .Select(email => new GetEmailsResponse
                 {
-                    ID = email.ID,
+                    Id = email.ID,
                     Primary = email.Primary,
                     Email = email.Email
                 })
@@ -65,7 +65,7 @@ static class MemberAPIs
                 .Where(hobby => hobby.Member.ID == member.ID)
                 .Select(hobby => new GetHobbiesResponse
                 {
-                    ID = hobby.ID,
+                    Id = hobby.ID,
                     Started = hobby.Started,
                     Ended = hobby.Ended,
                     Title = hobby.Title,
@@ -78,9 +78,9 @@ static class MemberAPIs
                 .Where(phone => phone.Member.ID == member.ID)
                 .Select(phone => new GetPhonesResponse
                 {
-                    ID = phone.ID,
+                    Id = phone.ID,
                     Primary = phone.Primary,
-                    Phone_Number = phone.Phone
+                    Phone_number = phone.Phone
                 })
                 .ToList(),
             Residences = Context.Residences
@@ -88,9 +88,9 @@ static class MemberAPIs
                 .Where(residence => residence.Member.ID == member.ID)
                 .Select(residence => new GetResidencesResponse
                 {
-                    ID = residence.ID,
-                    Addr_Line_1 = residence.Address_Line_1,
-                    Addr_Line_2 = residence.Address_Line_2,
+                    Id = residence.ID,
+                    Addr_line_1 = residence.Address_Line_1,
+                    Addr_line_2 = residence.Address_Line_2,
                     City = residence.City,
                     State = residence.State,
                     Country = residence.Country
@@ -99,20 +99,20 @@ static class MemberAPIs
             Spouses = Context.Spouses
                 .Select(spouse => new GetSpousesResponse
                 {
-                    ID = spouse.ID,
-                    Husband_ID = spouse.Husband.ID,
-                    Wife_ID = spouse.Wife.ID,
+                    Id = spouse.ID,
+                    Husband_id = spouse.Husband.ID,
+                    Wife_id = spouse.Wife.ID,
                     Started = spouse.Started,
                     Ended = spouse.Ended
                 })
-                .Where(spouse => spouse.Husband_ID == member.ID || spouse.Wife_ID == member.ID)
+                .Where(spouse => spouse.Husband_id == member.ID || spouse.Wife_id == member.ID)
                 .ToList(),
             Work_history = Context.Works
                 .Include(work => work.Member)
                 .Where(work => work.Member.ID == member.ID)
                 .Select(work => new GetWorkResponse
                 {
-                    ID = work.ID,
+                    Id = work.ID,
                     Started = work.Started,
                     Ended = work.Ended,
                     Title = work.Title,
@@ -143,11 +143,11 @@ static class MemberAPIs
                     Mnames = Request.Mnames,
                     Lname = Request.Lname,
                     Sex = Request.Sex,
-                    DOB = Request.DOB,
+                    DOB = Request.Dob,
                     Birthplace = Request.Birthplace,
-                    DOD = Request.DOD,
+                    DOD = Request.Dod,
                     Deathplace = Request.Deathplace,
-                    CauseOfDeath = Request.Death_Cause,
+                    CauseOfDeath = Request.Death_cause,
                     Ethnicity = Request.Ethnicity,
                     Biography = Request.Biography
                 };
@@ -156,21 +156,7 @@ static class MemberAPIs
                 Context.SaveChanges();
 
                 // Compile response
-                return Results.Created($"{NewMember.ID}", new GetMembersResponse
-                {
-                    ID = NewMember.ID,
-                    Fname = NewMember.Fname,
-                    Mnames = NewMember.Mnames,
-                    Lname = NewMember.Lname,
-                    Sex = NewMember.Sex,
-                    DOB = NewMember.DOB,
-                    Birthplace = NewMember.Birthplace,
-                    DOD = NewMember.DOD,
-                    Deathplace = NewMember.Deathplace,
-                    Death_cause = NewMember.CauseOfDeath,
-                    Ethnicity = NewMember.Ethnicity,
-                    Biography = NewMember.Biography
-                });
+                return Results.Created($"{NewMember.ID}", CompileWholeMember(NewMember, Context));
             }
             catch (ArgumentException a)
             {
@@ -204,11 +190,13 @@ static class MemberAPIs
         .WithOpenApi();
 
 
-        app.MapPut("/trees/members/{member_id}", (int member_id, HttpContext httpContext, PutMembersRequest Request) =>
+        app.MapPut("/trees/{tree_id}/members/{member_id}", (
+            int tree_id, int member_id, HttpContext httpContext, PutMembersRequest Request) =>
         {
             try
             {
                 using var Context = DatabaseManager.GetActiveContext();
+                Console.WriteLine($"PUT /trees/{tree_id}/members/{member_id} called!");
 
                 // Authenticate
                 Authenticator.Authenticate(Context, httpContext: httpContext);
@@ -220,23 +208,33 @@ static class MemberAPIs
                 Existing.Mnames = Request.Mnames;
                 Existing.Lname = Request.Lname;
                 Existing.Sex = Request.Sex;
-                Existing.DOB = Request.DOB;
+                Existing.DOB = Request.Dob;
                 Existing.Birthplace = Request.Birthplace;
-                Existing.DOD = Request.DOD;
+                Existing.DOD = Request.Dod;
                 Existing.Deathplace = Request.Deathplace;
-                Existing.CauseOfDeath = Request.Death_Cause;
+                Existing.CauseOfDeath = Request.Death_cause;
                 Existing.Ethnicity = Request.Ethnicity;
                 Existing.Biography = Request.Biography;
 
-                // Add or Modify ParentChildRelationships
+                // Get list of all members of the tree
+                var Members = Context.Members
+                    .Where(m => m.Tree.ID == tree_id)
+                    .ToDictionary(m => m.ID);
+
+                // Remove Parental Relationships that do not exist
+                var NewIDs = Request.Children.Select(c => c.Id).ToList();
+                var PRsToDelete = Context.ParentalRelationships
+                    .Where(p => NewIDs.Contains(p.ID)
+                        && (p.Child == Existing || p.Parent == Existing));
+                Context.ParentalRelationships.RemoveRange(PRsToDelete);
+
+                // Add or Modify ParentalRelationships
                 foreach (var child in Request.Children)
                 {
-                    var ChildMember = Context.Members
-                        .First(m => m.ID == child.Child_ID);
-                    var ParentMember = Context.Members
-                        .First(m => m.ID == child.Parent_ID);
+                    var ChildMember = Members[child.Child_id];
+                    var ParentMember = Members[child.Parent_id];
 
-                    if (child.ID == null)
+                    if (child.Id == null)
                     {
                         Context.ParentalRelationships.Add(new ParentalRelationship
                         {
@@ -249,17 +247,23 @@ static class MemberAPIs
                     else
                     {
                         var rel = Context.ParentalRelationships
-                            .First(p => p.ID == child.ID);
+                            .First(p => p.ID == child.Id);
                         rel.Child = ChildMember;
                         rel.Parent = ParentMember;
                         rel.Adopted = child.Adopted;
                     }
                 }
 
+                // Remove Education Histories that do not exist
+                NewIDs = Request.Education_history.Select(e => e.Id).ToList();
+                var EdusToDelete = Context.Educations
+                    .Where(e => NewIDs.Contains(e.ID) && e.Member == Existing);
+                Context.Educations.RemoveRange(EdusToDelete);
+
                 // Add or Modify Educations
                 foreach (var ReqEdu in Request.Education_history)
                 {
-                    if (ReqEdu.ID == null)
+                    if (ReqEdu.Id == null)
                     {
                         Context.Educations.Add(new Education
                         {
@@ -275,7 +279,7 @@ static class MemberAPIs
                     else
                     {
                         var Education = Context.Educations
-                            .First(e => e.ID == ReqEdu.ID);
+                            .First(e => e.ID == ReqEdu.Id);
                         Education.Started = ReqEdu.Started;
                         Education.Ended = ReqEdu.Ended;
                         Education.Title = ReqEdu.Title;
@@ -284,10 +288,16 @@ static class MemberAPIs
                     }
                 }
 
+                // Remove Emails that do not exist
+                NewIDs = Request.Emails.Select(e => e.Id).ToList();
+                var EmailsToDelete = Context.Educations
+                    .Where(e => NewIDs.Contains(e.ID) && e.Member == Existing);
+                Context.Educations.RemoveRange(EmailsToDelete);
+
                 // Add or Modify Emails
                 foreach (var ReqEmail in Request.Emails)
                 {
-                    if (ReqEmail.ID == null)
+                    if (ReqEmail.Id == null)
                     {
                         Context.Emails.Add(new MemberEmail
                         {
@@ -300,16 +310,22 @@ static class MemberAPIs
                     else
                     {
                         var Email = Context.Emails
-                            .First(e => e.ID == ReqEmail.ID);
+                            .First(e => e.ID == ReqEmail.Id);
                         Email.Email = ReqEmail.Email;
                         Email.Primary = ReqEmail.Primary;
                     }
                 }
 
+                // Remove Hobbies that do not exist
+                NewIDs = Request.Hobbies.Select(h => h.Id).ToList();
+                var HobbiesToDelete = Context.Hobbies
+                    .Where(h => NewIDs.Contains(h.ID) && h.Member == Existing);
+                Context.Hobbies.RemoveRange(HobbiesToDelete);
+
                 // Add or Modify Hobbies
                 foreach (var ReqHobby in Request.Hobbies)
                 {
-                    if (ReqHobby.ID == null)
+                    if (ReqHobby.Id == null)
                     {
                         Context.Hobbies.Add(new Hobby
                         {
@@ -325,7 +341,7 @@ static class MemberAPIs
                     else
                     {
                         var Hobby = Context.Hobbies
-                            .First(h => h.ID == ReqHobby.ID);
+                            .First(h => h.ID == ReqHobby.Id);
                         Hobby.Started = ReqHobby.Started;
                         Hobby.Ended = ReqHobby.Ended;
                         Hobby.Title = ReqHobby.Title;
@@ -334,15 +350,21 @@ static class MemberAPIs
                     }
                 }
 
+                // Remove Phone Numbers that do not exist
+                NewIDs = Request.Phones.Select(p => p.Id).ToList();
+                var PhonesToDelete = Context.Phones
+                    .Where(p => NewIDs.Contains(p.ID) && p.Member == Existing);
+                Context.Phones.RemoveRange(PhonesToDelete);
+
                 // Add or Modify Phones
                 foreach (var ReqPhone in Request.Phones)
                 {
-                    if (ReqPhone.ID == null)
+                    if (ReqPhone.Id == null)
                     {
                         Context.Phones.Add(new MemberPhone
                         {
                             Created = DateTime.UtcNow,
-                            Phone = ReqPhone.Phone_Number,
+                            Phone = ReqPhone.Phone_number,
                             Primary = ReqPhone.Primary,
                             Member = Existing
                         });
@@ -350,22 +372,28 @@ static class MemberAPIs
                     else
                     {
                         var Phone = Context.Phones
-                            .First(p => p.ID == ReqPhone.ID);
-                        Phone.Phone = ReqPhone.Phone_Number;
+                            .First(p => p.ID == ReqPhone.Id);
+                        Phone.Phone = ReqPhone.Phone_number;
                         Phone.Primary = ReqPhone.Primary;
                     }
                 }
 
+                // Remove Residences that do not exist
+                NewIDs = Request.Residences.Select(r => r.Id).ToList();
+                var ResToDelete = Context.Residences
+                    .Where(r => NewIDs.Contains(r.ID) && r.Member == Existing);
+                Context.Residences.RemoveRange(ResToDelete);
+
                 // Add or Modify Residences
                 foreach (var ReqRes in Request.Residences)
                 {
-                    if (ReqRes.ID == null)
+                    if (ReqRes.Id == null)
                     {
                         Context.Residences.Add(new Residence
                         {
                             Created = DateTime.UtcNow,
-                            Address_Line_1 = ReqRes.Addr_Line_1,
-                            Address_Line_2 = ReqRes.Addr_Line_2,
+                            Address_Line_1 = ReqRes.Addr_line_1,
+                            Address_Line_2 = ReqRes.Addr_line_2,
                             City = ReqRes.City,
                             State = ReqRes.State,
                             Country = ReqRes.Country,
@@ -377,9 +405,9 @@ static class MemberAPIs
                     else
                     {
                         var Residence = Context.Residences
-                            .First(r => r.ID == ReqRes.ID);
-                        Residence.Address_Line_1 = ReqRes.Addr_Line_1;
-                        Residence.Address_Line_2 = ReqRes.Addr_Line_2;
+                            .First(r => r.ID == ReqRes.Id);
+                        Residence.Address_Line_1 = ReqRes.Addr_line_1;
+                        Residence.Address_Line_2 = ReqRes.Addr_line_2;
                         Residence.City = ReqRes.City;
                         Residence.State = ReqRes.State;
                         Residence.Country = ReqRes.Country;
@@ -388,13 +416,20 @@ static class MemberAPIs
                     }
                 }
 
+                // Remove Spousal Relationships that do not exist
+                NewIDs = Request.Spouses.Select(s => s.Id).ToList();
+                var SpousesToDelete = Context.Spouses
+                    .Where(s => NewIDs.Contains(s.ID)
+                        && (s.Wife == Existing || s.Husband == Existing));
+                Context.Spouses.RemoveRange(SpousesToDelete);
+
                 // Add or Modify Spouses
                 foreach (var ReqSpouse in Request.Spouses)
                 {
-                    var Husband = Context.Members.First(m => m.ID == ReqSpouse.Husband_ID);
-                    var Wife = Context.Members.First(m => m.ID == ReqSpouse.Wife_ID);
+                    var Husband = Members[ReqSpouse.Husband_id];
+                    var Wife = Members[ReqSpouse.Wife_id];
 
-                    if (ReqSpouse.ID == null)
+                    if (ReqSpouse.Id == null)
                     {
                         Context.Spouses.Add(new Spouse
                         {
@@ -408,8 +443,8 @@ static class MemberAPIs
                     else
                     {
                         var Spouse = Context.Spouses.First(s =>
-                            s.Husband.ID == ReqSpouse.Husband_ID ||
-                            s.Wife.ID == ReqSpouse.Wife_ID);
+                            s.Husband.ID == ReqSpouse.Husband_id ||
+                            s.Wife.ID == ReqSpouse.Wife_id);
                         Spouse.Husband = Husband;
                         Spouse.Wife = Wife;
                         Spouse.Started = ReqSpouse.Started;
@@ -417,10 +452,16 @@ static class MemberAPIs
                     }
                 }
 
-                // Add or Modify Works
+                // Remove Work Experiences that do not exist
+                NewIDs = Request.Work_history.Select(w => w.Id).ToList();
+                var WorksToDelete = Context.Works
+                    .Where(w => NewIDs.Contains(w.ID) && w.Member == Existing);
+                Context.Works.RemoveRange(WorksToDelete);
+
+                // Add or Modify Work Experiences
                 foreach (var ReqWork in Request.Work_history)
                 {
-                    if (ReqWork.ID == null)
+                    if (ReqWork.Id == null)
                     {
                         Context.Works.Add(new Work
                         {
@@ -436,7 +477,7 @@ static class MemberAPIs
                     else
                     {
                         var Work = Context.Works
-                            .First(w => w.ID == ReqWork.ID);
+                            .First(w => w.ID == ReqWork.Id);
                         Work.Started = ReqWork.Started;
                         Work.Ended = ReqWork.Ended;
                         Work.Title = ReqWork.Title;
@@ -546,32 +587,32 @@ static class MemberAPIs
                 // Remove Education history
                 Context.Educations.RemoveRange(
                     Context.Educations.Where(e => e.Member == MemberToDelete));
-                
+
                 // Remove Emails
                 Context.Emails.RemoveRange(
                     Context.Emails.Where(e => e.Member == MemberToDelete));
-                
+
                 // Remove Hobbies
                 Context.Hobbies.RemoveRange(
                     Context.Hobbies.Where(h => h.Member == MemberToDelete));
-                
+
                 // Remove Phones
                 Context.Phones.RemoveRange(
                     Context.Phones.Where(p => p.Member == MemberToDelete));
-                
+
                 // Remove Residences
                 Context.Residences.RemoveRange(
                     Context.Residences.Where(r => r.Member == MemberToDelete));
-                
+
                 // Remove Spouses
                 Context.Spouses.RemoveRange(
                     Context.Spouses.Where(
                         s => s.Wife == MemberToDelete || s.Husband == MemberToDelete));
-                
+
                 // Remove Work history
                 Context.Works.RemoveRange(
                     Context.Works.Where(w => w.Member == MemberToDelete));
-                
+
                 // Finally remove the Member
                 Context.Members.Remove(MemberToDelete);
                 Context.SaveChanges();

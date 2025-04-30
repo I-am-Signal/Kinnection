@@ -5,19 +5,32 @@ using NUnit.Framework;
 
 namespace test;
 
+public class LowerCaseNamingPolicy : JsonNamingPolicy
+{
+    public override string ConvertName(string name)
+    {
+        return name.ToLower();
+    }
+}
+
 [TestFixture]
 public class MembersTest
 {
+    JsonSerializerOptions Options = new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = new LowerCaseNamingPolicy(),
+        WriteIndented = true
+    };
     private readonly KinnectionContext Context = DatabaseManager.GetActiveContext();
     private readonly string URI = TestRunner.GetURI();
     private readonly string MembersSubDir = "members/";
     private readonly string TreesSubDir = "trees/";
     private readonly string UsersSubDir = "users/";
-
     private Dictionary<string, JsonElement> MemberInfo =
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
             JsonSerializer.Serialize(new
             {
+                id = (int?)null,
                 fname = "Mem",
                 mnames = "Ber Mem",
                 lname = "Ber",
@@ -31,6 +44,14 @@ public class MembersTest
                 biography = (string?)null
             })
         )!;
+    private List<PutChildrenRequest> MutableChildren = [];
+    private List<PutEducationRequest> MutableEducations = [];
+    private List<PutEmailsRequest> MutableEmails = [];
+    private List<PutHobbiesRequest> MutableHobbies = [];
+    private List<PutPhonesRequest> MutablePhones = [];
+    private List<PutResidencesRequest> MutableResidences = [];
+    private List<PutSpousesRequest> MutableSpouses = [];
+    private List<PutWorkRequest> MutableWorks = [];
     private Dictionary<string, JsonElement> TreeInfo =
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
         @"{""name"": ""TreeName""}")!;
@@ -42,6 +63,33 @@ public class MembersTest
             ""email"": ""MemberEmail@mail.com"",
             ""password"": ""{Authenticator.GenerateRandomString()}""
         }}")!;
+
+    private Dictionary<string, JsonElement> BuildRequestContent()
+    {
+        return new Dictionary<string, JsonElement>()
+        {
+            ["id"] = MemberInfo["id"],
+            ["fname"] = MemberInfo["fname"],
+            ["mnames"] = MemberInfo["mnames"],
+            ["lname"] = MemberInfo["lname"],
+            ["sex"] = MemberInfo["sex"],
+            ["dob"] = MemberInfo["dob"],
+            ["birthplace"] = MemberInfo["birthplace"],
+            ["dod"] = MemberInfo["dod"],
+            ["deathplace"] = MemberInfo["deathplace"],
+            ["death_cause"] = MemberInfo["death_cause"],
+            ["ethnicity"] = MemberInfo["ethnicity"],
+            ["biography"] = MemberInfo["biography"],
+            ["children"] = JsonSerializer.SerializeToElement(MutableChildren, Options),
+            ["education_history"] = JsonSerializer.SerializeToElement(MutableEducations, Options),
+            ["emails"] = JsonSerializer.SerializeToElement(MutableEmails, Options),
+            ["hobbies"] = JsonSerializer.SerializeToElement(MutableHobbies, Options),
+            ["phones"] = JsonSerializer.SerializeToElement(MutablePhones, Options),
+            ["residences"] = JsonSerializer.SerializeToElement(MutableResidences, Options),
+            ["spouses"] = JsonSerializer.SerializeToElement(MutableSpouses, Options),
+            ["work_history"] = JsonSerializer.SerializeToElement(MutableWorks, Options)
+        };
+    }
 
     [OneTimeSetUp]
     public async Task SetUp()
@@ -106,20 +154,7 @@ public class MembersTest
     public async Task PosPostMembers()
     {
         // Make request
-        var RequestContent = new Dictionary<string, JsonElement>()
-        {
-            ["fname"] = MemberInfo["fname"],
-            ["mnames"] = MemberInfo["mnames"],
-            ["lname"] = MemberInfo["lname"],
-            ["sex"] = MemberInfo["sex"],
-            ["dob"] = MemberInfo["dob"],
-            ["birthplace"] = MemberInfo["birthplace"],
-            ["dod"] = MemberInfo["dod"],
-            ["deathplace"] = MemberInfo["deathplace"],
-            ["death_cause"] = MemberInfo["death_cause"],
-            ["ethnicity"] = MemberInfo["ethnicity"],
-            ["biography"] = MemberInfo["biography"]
-        };
+        var RequestContent = BuildRequestContent();
 
         HttpResponseMessage Response = await HttpService.PostAsync(
             $"{URI}{TreesSubDir}{TreeInfo["id"].GetInt32()}/{MembersSubDir}",
@@ -155,6 +190,60 @@ public class MembersTest
     [Test, Order(2)]
     public async Task PosPutMembers()
     {
+        // -----------------------------------------------------------------
+        // Setup: Make two additional test members and define PutURL
+        // -----------------------------------------------------------------
+
+        string PutURL = URI + TreesSubDir + TreeInfo["id"].GetInt32() + '/'
+            + MembersSubDir + MemberInfo["id"].GetInt32();
+
+        // Make Test Member 2
+        var RequestContent = BuildRequestContent();
+
+        HttpResponseMessage Response = await HttpService.PostAsync(
+            $"{URI}{TreesSubDir}{TreeInfo["id"].GetInt32()}/{MembersSubDir}",
+            RequestContent,
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        // Evaluate Headers
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
+
+        // Get ID
+        var MemberID2 = Convert.ToInt32(Response.Headers.Location!.ToString());
+
+
+        // Make Test Member 3
+        RequestContent["fname"] = JsonSerializer.SerializeToElement("First3");
+        RequestContent["lname"] = JsonSerializer.SerializeToElement("Last3");
+        RequestContent["sex"] = JsonSerializer.SerializeToElement(true);
+
+        Response = await HttpService.PostAsync(
+            $"{URI}{TreesSubDir}{TreeInfo["id"].GetInt32()}/{MembersSubDir}",
+            RequestContent,
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        // Evaluate Headers
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
+
+        // Get ID
+        var MemberID3 = Convert.ToInt32(Response.Headers.Location!.ToString());
+
+        // -----------------------------------------------------------------
+        // Test 1: Modify membr attrs without any rels
+        // -----------------------------------------------------------------
+
         // Make request
         MemberInfo["fname"] = JsonSerializer.SerializeToElement("PutFirst");
         MemberInfo["mnames"] = JsonSerializer.SerializeToElement("Put Mid");
@@ -167,44 +256,16 @@ public class MembersTest
         MemberInfo["death_cause"] = JsonSerializer.SerializeToElement("Too many commits");
         MemberInfo["ethnicity"] = JsonSerializer.SerializeToElement("JSON string");
         MemberInfo["biography"] = JsonSerializer.SerializeToElement("PutFirst PutLast was a great JSON string.");
-        MemberInfo["children"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
-        MemberInfo["education_history"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
-        MemberInfo["emails"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
-        MemberInfo["hobbies"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
-        MemberInfo["phones"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
-        MemberInfo["residences"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
-        MemberInfo["spouses"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
-        MemberInfo["work_history"] = JsonSerializer.SerializeToElement<List<JsonElement>>([]);
 
-        var RequestContent = new Dictionary<string, JsonElement>()
-        {
-            ["tree_id"] = TreeInfo["id"],
-            ["fname"] = MemberInfo["fname"],
-            ["mnames"] = MemberInfo["mnames"],
-            ["lname"] = MemberInfo["lname"],
-            ["sex"] = MemberInfo["sex"],
-            ["dob"] = MemberInfo["dob"],
-            ["birthplace"] = MemberInfo["birthplace"],
-            ["dod"] = MemberInfo["dod"],
-            ["deathplace"] = MemberInfo["deathplace"],
-            ["death_cause"] = MemberInfo["death_cause"],
-            ["ethnicity"] = MemberInfo["ethnicity"],
-            ["biography"] = MemberInfo["biography"],
-            ["children"] = MemberInfo["children"],
-            ["education_history"] = MemberInfo["education_history"],
-            ["emails"] = MemberInfo["emails"],
-            ["hobbies"] = MemberInfo["hobbies"],
-            ["phones"] = MemberInfo["phones"],
-            ["residences"] = MemberInfo["residences"],
-            ["spouses"] = MemberInfo["spouses"],
-            ["work_history"] = MemberInfo["work_history"]
-        };
+        RequestContent = BuildRequestContent();
 
-        HttpResponseMessage Response = await HttpService.PutAsync(
-            URI + TreesSubDir + MembersSubDir + MemberInfo["id"].GetInt32(),
+        Response = await HttpService.PutAsync(
+            PutURL,
             RequestContent,
             Headers: TestRunner.GetHeaders()
         );
+
+        Console.WriteLine(PutURL);
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -224,6 +285,156 @@ public class MembersTest
             await Response.Content.ReadAsStringAsync());
 
         TestRunner.EvaluateJsonElementObject(Output, Expected);
+
+        // -----------------------------------------------------------------
+        // Test 2: Nullable and non-null member attrs, add rel
+        // -----------------------------------------------------------------
+
+        // Make request
+        MemberInfo["fname"] = JsonSerializer.SerializeToElement("PutFirst");
+        MemberInfo["mnames"] = JsonSerializer.SerializeToElement((string)null!);
+        MemberInfo["lname"] = JsonSerializer.SerializeToElement("PutLast");
+        MemberInfo["sex"] = JsonSerializer.SerializeToElement(true);
+        MemberInfo["dob"] = JsonSerializer.SerializeToElement((DateOnly?)null);
+        MemberInfo["birthplace"] = JsonSerializer.SerializeToElement((string)null!);
+        MemberInfo["dod"] = JsonSerializer.SerializeToElement((DateOnly?)null);
+        MemberInfo["deathplace"] = JsonSerializer.SerializeToElement((string)null!);
+        MemberInfo["death_cause"] = JsonSerializer.SerializeToElement((string)null!);
+        MemberInfo["ethnicity"] = JsonSerializer.SerializeToElement((string)null!);
+        MemberInfo["biography"] = JsonSerializer.SerializeToElement((string)null!);
+        MutableChildren.Add(new PutChildrenRequest
+        {
+            Id = null,
+            Parent_id = MemberID2,
+            Child_id = MemberInfo["id"].GetInt32(),
+            Adopted = null
+        });
+        MutableEducations.Add(new PutEducationRequest
+        {
+            Id = null,
+            Started = null,
+            Ended = null,
+            Title = "title1",
+            Organization = null!,
+            Description = null!
+        });
+        MutableEmails.Add(new PutEmailsRequest
+        {
+            Id = null,
+            Email = "test1@mail.com",
+            Primary = true
+        });
+        MutableHobbies.Add(new PutHobbiesRequest
+        {
+            Id = null,
+            Started = null,
+            Ended = null,
+            Title = "title1",
+            Organization = null!,
+            Description = null!
+        });
+        MutablePhones.Add(new PutPhonesRequest
+        {
+            Id = null,
+            Phone_number = "1234567890",
+            Primary = true
+        });
+        MutableResidences.Add(new PutResidencesRequest
+        {
+            Id = null,
+            Addr_line_1 = "123 Test Street",
+            Addr_line_2 = null,
+            City = "Testville",
+            State = null,
+            Country = "Testistan",
+            Started = null,
+            Ended = null
+        });
+        MutableSpouses.Add(new PutSpousesRequest
+        {
+            Id = null,
+            Husband_id = MemberInfo["id"].GetInt32(),
+            Wife_id = MemberID3,
+            Started = null,
+            Ended = null
+        });
+        MutableWorks.Add(new PutWorkRequest
+        {
+            Id = null,
+            Started = null,
+            Ended = null,
+            Title = "title1",
+            Organization = null!,
+            Description = null!
+        });
+
+        RequestContent = new Dictionary<string, JsonElement>()
+        {
+            ["fname"] = MemberInfo["fname"],
+            ["mnames"] = MemberInfo["mnames"],
+            ["lname"] = MemberInfo["lname"],
+            ["sex"] = MemberInfo["sex"],
+            ["dob"] = MemberInfo["dob"],
+            ["birthplace"] = MemberInfo["birthplace"],
+            ["dod"] = MemberInfo["dod"],
+            ["deathplace"] = MemberInfo["deathplace"],
+            ["death_cause"] = MemberInfo["death_cause"],
+            ["ethnicity"] = MemberInfo["ethnicity"],
+            ["biography"] = MemberInfo["biography"],
+            ["children"] = JsonSerializer.SerializeToElement(MutableChildren, Options),
+            ["education_history"] = JsonSerializer.SerializeToElement(MutableEducations, Options),
+            ["emails"] = JsonSerializer.SerializeToElement(MutableEmails, Options),
+            ["hobbies"] = JsonSerializer.SerializeToElement(MutableHobbies, Options),
+            ["phones"] = JsonSerializer.SerializeToElement(MutablePhones, Options),
+            ["residences"] = JsonSerializer.SerializeToElement(MutableResidences, Options),
+            ["spouses"] = JsonSerializer.SerializeToElement(MutableSpouses, Options),
+            ["work_history"] = JsonSerializer.SerializeToElement(MutableWorks, Options)
+        };
+
+        Response = await HttpService.PutAsync(
+            PutURL,
+            RequestContent,
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Evaluate Headers
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
+
+        // Build expected values
+        RequestContent["id"] = MemberInfo["id"];
+        Expected = JsonSerializer.Deserialize<JsonElement>(
+            JsonSerializer.Serialize(RequestContent));
+
+        // Evaluate content
+        Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
+
+        // -----------------------------------------------------------------
+        // Test 3: Same Member attrs, add rel and modify rel
+        // -----------------------------------------------------------------
+
+        // -----------------------------------------------------------------
+        // Test 4: Same Member attrs, add rel and remove rel
+        // -----------------------------------------------------------------
+
+        // -----------------------------------------------------------------
+        // Test 5: Same Member attrs, modify rel and remove rel
+        // -----------------------------------------------------------------
+
+        // -----------------------------------------------------------------
+        // Test 6: Same Member attrs, remove rel
+        // -----------------------------------------------------------------
+
+        // -----------------------------------------------------------------
+        // Tear Down: done via end-of-module tear down
+        // -----------------------------------------------------------------
     }
 
     [Test, Order(3)]
@@ -259,14 +470,14 @@ public class MembersTest
                 ["death_cause"] = MemberInfo["death_cause"],
                 ["ethnicity"] = MemberInfo["ethnicity"],
                 ["biography"] = MemberInfo["biography"],
-                ["children"] = MemberInfo["children"],
-                ["education_history"] = MemberInfo["education_history"],
-                ["emails"] = MemberInfo["emails"],
-                ["hobbies"] = MemberInfo["hobbies"],
-                ["phones"] = MemberInfo["phones"],
-                ["residences"] = MemberInfo["residences"],
-                ["spouses"] = MemberInfo["spouses"],
-                ["work_history"] = MemberInfo["work_history"]
+                ["children"] = JsonSerializer.SerializeToElement(MutableChildren, Options),
+                ["education_history"] = JsonSerializer.SerializeToElement(MutableEducations, Options),
+                ["emails"] = JsonSerializer.SerializeToElement(MutableEmails, Options),
+                ["hobbies"] = JsonSerializer.SerializeToElement(MutableHobbies, Options),
+                ["phones"] = JsonSerializer.SerializeToElement(MutablePhones, Options),
+                ["residences"] = JsonSerializer.SerializeToElement(MutableResidences, Options),
+                ["spouses"] = JsonSerializer.SerializeToElement(MutableSpouses, Options),
+                ["work_history"] = JsonSerializer.SerializeToElement(MutableWorks, Options)
             });
 
         // Evaluate content
@@ -277,7 +488,7 @@ public class MembersTest
     }
 
     [Test, Order(4)]
-    public async Task PosDeleteTrees()
+    public async Task PosDeleteMembers()
     {
         // Make request    
         HttpResponseMessage Response = await HttpService.DeleteAsync(
