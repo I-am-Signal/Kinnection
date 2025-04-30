@@ -1,14 +1,14 @@
 namespace Kinnection
 {
     // Interfaces
-    public interface IID
+    public interface IId
     {
-        public int ID { get; set; }
+        public int Id { get; set; }
     }
 
-    public interface IOptionalID
+    public interface IOptionalId
     {
-        public int? ID { get; set; }
+        public int? Id { get; set; }
     }
 
     public interface IPrimary

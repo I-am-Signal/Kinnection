@@ -36,9 +36,9 @@ static class TreeAPIs
                 // Compile response
                 return Results.Created($"{NewTree.ID}", new GetTreesResponse
                 {
-                    ID = NewTree.ID,
+                    Id = NewTree.ID,
                     Name = NewTree.Name,
-                    Member_Self_ID = NewTree.SelfID
+                    Member_self_id = NewTree.SelfID
                 });
             }
             catch (ArgumentException a)
@@ -91,7 +91,7 @@ static class TreeAPIs
                     throw new ArgumentException("Name must not be null!");
 
                 Existing.Name = request.Name;
-                Existing.SelfID = request.Member_Self_ID;
+                Existing.SelfID = request.Member_self_id;
 
                 Context.SaveChanges();
 
@@ -99,9 +99,9 @@ static class TreeAPIs
                 return Results.Ok(
                     new GetTreesResponse
                     {
-                        ID = Existing.ID,
+                        Id = Existing.ID,
                         Name = Existing.Name,
-                        Member_Self_ID = Existing.SelfID
+                        Member_self_id = Existing.SelfID
                     });
             }
             catch (ArgumentException a)
@@ -152,33 +152,33 @@ static class TreeAPIs
                     .Where(member => member.Tree.ID == tree_id)
                     .Select(member => new GetTreesMembersResponse
                     {
-                        ID = member.ID,
+                        Id = member.ID,
                         Fname = member.Fname,
                         Mnames = member.Mnames,
                         Lname = member.Lname,
                         Sex = member.Sex,
-                        DOB = member.DOB,
-                        DOD = member.DOD,
+                        Dob = member.DOB,
+                        Dod = member.DOD,
                         Spouses = Context.Spouses
                             .Select(spouse => new GetSpousesResponse
                             {
-                                ID = spouse.ID,
-                                Husband_ID = spouse.Husband.ID,
-                                Wife_ID = spouse.Wife.ID,
+                                Id = spouse.ID,
+                                Husband_id = spouse.Husband.ID,
+                                Wife_id = spouse.Wife.ID,
                                 Started = spouse.Started,
                                 Ended = spouse.Ended
                             })
-                            .Where(spouse => spouse.Husband_ID == member.ID || spouse.Wife_ID == member.ID)
+                            .Where(spouse => spouse.Husband_id == member.ID || spouse.Wife_id == member.ID)
                             .ToList(),
                         Children = Context.ParentalRelationships
                             .Select(pcr => new GetChildrenResponse
                             {
-                                ID = pcr.ID,
-                                Parent_ID = pcr.Parent.ID,
-                                Child_ID = pcr.Child.ID,
+                                Id = pcr.ID,
+                                Parent_id = pcr.Parent.ID,
+                                Child_id = pcr.Child.ID,
                                 Adopted = pcr.Adopted
                             })
-                            .Where(pcr => pcr.Parent_ID == member.ID || pcr.Child_ID == member.ID)
+                            .Where(pcr => pcr.Parent_id == member.ID || pcr.Child_id == member.ID)
                             .ToList()
                     })
                     .ToList();
@@ -188,9 +188,9 @@ static class TreeAPIs
                 return Results.Ok(
                     new GetIndividualTreesResponse
                     {
-                        ID = Tree.ID,
+                        Id = Tree.ID,
                         Name = Tree.Name,
-                        Member_Self_ID = Tree.SelfID,
+                        Member_self_id = Tree.SelfID,
                         Members = Members
                     });
             }
@@ -236,9 +236,9 @@ static class TreeAPIs
                             .Where(t => t.User.ID == UserID)
                             .Select(tree => new GetTreesResponse
                             {
-                                ID = tree.ID,
+                                Id = tree.ID,
                                 Name = tree.Name,
-                                Member_Self_ID = tree.SelfID
+                                Member_self_id = tree.SelfID
                             })
                             .ToList()
                     }

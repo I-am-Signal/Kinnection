@@ -3,9 +3,9 @@ namespace Kinnection
     // Trees
     public class GetTreesResponse
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required string Name { get; set; }
-        public required int? Member_Self_ID { get; set; }
+        public required int? Member_self_id { get; set; }
     }
 
     public class GetAllTreesResponse
@@ -19,30 +19,30 @@ namespace Kinnection
     }
 
     
-    public class GetTreesMembersResponse : IID
+    public class GetTreesMembersResponse : IId
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required string Fname { get; set; }
         public required string? Mnames { get; set; }
         public required string Lname { get; set; }
         public required bool Sex { get; set; }
-        public required DateOnly? DOB { get; set; }
-        public required DateOnly? DOD { get; set; }
+        public required DateOnly? Dob { get; set; }
+        public required DateOnly? Dod { get; set; }
         public required List<GetSpousesResponse> Spouses { get; set; }
         public required List<GetChildrenResponse> Children { get; set; }
     }
 
     // Trees/Members
-    public class GetMembersResponse : IID
+    public class GetMembersResponse : IId
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required string Fname { get; set; }
         public required string? Mnames { get; set; }
         public required string Lname { get; set; }
         public required bool Sex { get; set; }
-        public required DateOnly? DOB { get; set; }
+        public required DateOnly? Dob { get; set; }
         public required string? Birthplace { get; set; }
-        public required DateOnly? DOD { get; set; }
+        public required DateOnly? Dod { get; set; }
         public required string? Deathplace { get; set; }
         public required string? Death_cause { get; set; }
         public required string? Ethnicity { get; set; }
@@ -61,12 +61,12 @@ namespace Kinnection
     }
 
     // Trees/Members/Children
-    public class GetChildrenResponse : IID
+    public class GetChildrenResponse : IId
     {
-        public required int ID { get; set; }
-        public required int Parent_ID { get; set; }
-        public required int Child_ID { get; set; }
-        public required DateOnly Adopted { get; set; }
+        public required int Id { get; set; }
+        public required int Parent_id { get; set; }
+        public required int Child_id { get; set; }
+        public required DateOnly? Adopted { get; set; }
     }
 
     public class GetAllChildrenResponse
@@ -75,9 +75,9 @@ namespace Kinnection
     }
 
     // Trees/Members/Education History
-    public class GetEducationResponse : IID, ITimeline, IEvent
+    public class GetEducationResponse : IId, ITimeline, IEvent
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
@@ -90,15 +90,15 @@ namespace Kinnection
         public required List<GetEducationResponse> Education_History { get; set; }
     }
 
-    public class PostEducationResponse : IID
+    public class PostEducationResponse : IId
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
     }
 
     // Trees/Members/Hobbies
-    public class GetHobbiesResponse : IID, ITimeline, IEvent
+    public class GetHobbiesResponse : IId, ITimeline, IEvent
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
@@ -112,9 +112,9 @@ namespace Kinnection
     }
 
     // Trees/Members/Emails
-    public class GetEmailsResponse : IID, IPrimary
+    public class GetEmailsResponse : IId, IPrimary
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required string Email { get; set; }
         public required bool Primary { get; set; }
     }
@@ -125,10 +125,10 @@ namespace Kinnection
     }
 
     // Trees/Members/Phones
-    public class GetPhonesResponse : IID, IPrimary
+    public class GetPhonesResponse : IId, IPrimary
     {
-        public required int ID { get; set; }
-        public required string Phone_Number { get; set; }
+        public required int Id { get; set; }
+        public required string Phone_number { get; set; }
         public required bool Primary { get; set; }
     }
 
@@ -138,11 +138,11 @@ namespace Kinnection
     }
 
     // Trees/Members/Residences
-    public class GetResidencesResponse : IID
+    public class GetResidencesResponse : IId
     {
-        public required int ID { get; set; }
-        public required string Addr_Line_1 { get; set; }
-        public required string? Addr_Line_2 { get; set; }
+        public required int Id { get; set; }
+        public required string Addr_line_1 { get; set; }
+        public required string? Addr_line_2 { get; set; }
         public required string City { get; set; }
         public required string? State { get; set; }
         public required string Country { get; set; }
@@ -154,11 +154,11 @@ namespace Kinnection
     }
 
     // Trees/Members/Spouses
-    public class GetSpousesResponse : IID, ITimeline
+    public class GetSpousesResponse : IId, ITimeline
     {
-        public required int ID { get; set; }
-        public required int Husband_ID { get; set; }
-        public required int Wife_ID { get; set; }
+        public required int Id { get; set; }
+        public required int Husband_id { get; set; }
+        public required int Wife_id { get; set; }
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
     }
@@ -169,9 +169,9 @@ namespace Kinnection
     }
 
     // Trees/Members/Work History
-    public class GetWorkResponse : IID, ITimeline, IEvent
+    public class GetWorkResponse : IId, ITimeline, IEvent
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
         public required string Title { get; set; }
@@ -185,9 +185,9 @@ namespace Kinnection
     }
 
     // Users
-    public class GetUsersResponse : IID
+    public class GetUsersResponse : IId
     {
-        public required int ID { get; set; }
+        public required int Id { get; set; }
         public required string Fname { get; set; }
         public required string Lname { get; set; }
         public required string Email { get; set; }

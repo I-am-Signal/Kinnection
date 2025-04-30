@@ -63,7 +63,7 @@ static class UserAPIs
                 Authenticator.Provision(NewUser.ID, httpContext);
                 return Results.Created($"{NewUser.ID}", new GetUsersResponse
                 {
-                    ID = NewUser.ID,
+                    Id = NewUser.ID,
                     Fname = NewUser.Fname,
                     Lname = NewUser.Lname,
                     Email = NewUser.Email
@@ -123,7 +123,7 @@ static class UserAPIs
                 // Compile response
                 return Results.Ok(new GetUsersResponse
                 {
-                    ID = existing.ID,
+                    Id = existing.ID,
                     Fname = existing.Fname,
                     Lname = existing.Lname,
                     Email = existing.Email
@@ -167,12 +167,12 @@ static class UserAPIs
                 return Results.Ok(
                     Context.Users.Select(user => new GetUsersResponse
                     {
-                        ID = user.ID,
+                        Id = user.ID,
                         Fname = user.Fname,
                         Lname = user.Lname,
                         Email = user.Email
                     })
-                    .Single(u => u.ID == id)
+                    .Single(u => u.Id == id)
                 );
             }
             catch (AuthenticationException a)
