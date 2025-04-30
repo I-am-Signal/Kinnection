@@ -68,7 +68,7 @@ namespace Kinnection
         public required DateTime Created { get; set; } = DateTime.UtcNow;
         public required Member Child { get; set; }
         public required Member Parent { get; set; }
-        public required DateOnly Adopted { get; set; }
+        public required DateOnly? Adopted { get; set; }
     }
 
     public class Residence : BaseMixin, TimelineMixin
