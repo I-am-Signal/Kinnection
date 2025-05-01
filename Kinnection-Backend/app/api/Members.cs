@@ -35,6 +35,7 @@ static class MemberAPIs
                     Child_id = pcr.Child.ID,
                     Adopted = pcr.Adopted
                 })
+                .OrderBy(pcr => pcr.Id)
                 .Where(pcr => pcr.Parent_id == member.ID || pcr.Child_id == member.ID)
                 .ToList(),
             Education_history = Context.Educations
@@ -49,6 +50,7 @@ static class MemberAPIs
                     Organization = education.Organization,
                     Description = education.Description
                 })
+                .OrderBy(education => education.Id)
                 .ToList(),
             Emails = Context.Emails
                 .Include(email => email.Member)
@@ -59,6 +61,7 @@ static class MemberAPIs
                     Primary = email.Primary,
                     Email = email.Email
                 })
+                .OrderBy(email => email.Id)
                 .ToList(),
             Hobbies = Context.Hobbies
                 .Include(hobby => hobby.Member)
@@ -72,6 +75,7 @@ static class MemberAPIs
                     Organization = hobby.Organization,
                     Description = hobby.Description
                 })
+                .OrderBy(hobby => hobby.Id)
                 .ToList(),
             Phones = Context.Phones
                 .Include(phone => phone.Member)
@@ -82,6 +86,7 @@ static class MemberAPIs
                     Primary = phone.Primary,
                     Phone_number = phone.Phone
                 })
+                .OrderBy(phone => phone.Id)
                 .ToList(),
             Residences = Context.Residences
                 .Include(residence => residence.Member)
@@ -95,6 +100,7 @@ static class MemberAPIs
                     State = residence.State,
                     Country = residence.Country
                 })
+                .OrderBy(residence => residence.Id)
                 .ToList(),
             Spouses = Context.Spouses
                 .Select(spouse => new GetSpousesResponse
@@ -105,6 +111,7 @@ static class MemberAPIs
                     Started = spouse.Started,
                     Ended = spouse.Ended
                 })
+                .OrderBy(spouse => spouse.Id)
                 .Where(spouse => spouse.Husband_id == member.ID || spouse.Wife_id == member.ID)
                 .ToList(),
             Work_history = Context.Works
@@ -119,6 +126,7 @@ static class MemberAPIs
                     Organization = work.Organization,
                     Description = work.Description
                 })
+                .OrderBy(work => work.Id)
                 .ToList()
         };
     }
@@ -196,7 +204,6 @@ static class MemberAPIs
             try
             {
                 using var Context = DatabaseManager.GetActiveContext();
-                Console.WriteLine($"PUT /trees/{tree_id}/members/{member_id} called!");
 
                 // Authenticate
                 Authenticator.Authenticate(Context, httpContext: httpContext);
@@ -224,7 +231,7 @@ static class MemberAPIs
                 // Remove Parental Relationships that do not exist
                 var NewIDs = Request.Children.Select(c => c.Id).ToList();
                 var PRsToDelete = Context.ParentalRelationships
-                    .Where(p => NewIDs.Contains(p.ID)
+                    .Where(p => !NewIDs.Contains(p.ID)
                         && (p.Child == Existing || p.Parent == Existing));
                 Context.ParentalRelationships.RemoveRange(PRsToDelete);
 
@@ -247,7 +254,9 @@ static class MemberAPIs
                     else
                     {
                         var rel = Context.ParentalRelationships
-                            .First(p => p.ID == child.Id);
+                            .FirstOrDefault(p => p.ID == child.Id) ??
+                            throw new InvalidOperationException(
+                                $"An education history with ID {child.Id} was not found.");
                         rel.Child = ChildMember;
                         rel.Parent = ParentMember;
                         rel.Adopted = child.Adopted;
@@ -257,7 +266,7 @@ static class MemberAPIs
                 // Remove Education Histories that do not exist
                 NewIDs = Request.Education_history.Select(e => e.Id).ToList();
                 var EdusToDelete = Context.Educations
-                    .Where(e => NewIDs.Contains(e.ID) && e.Member == Existing);
+                    .Where(e => !NewIDs.Contains(e.ID) && e.Member == Existing);
                 Context.Educations.RemoveRange(EdusToDelete);
 
                 // Add or Modify Educations
@@ -279,8 +288,10 @@ static class MemberAPIs
                     else
                     {
                         var Education = Context.Educations
-                            .First(e => e.ID == ReqEdu.Id);
-                        Education.Started = ReqEdu.Started;
+                            .FirstOrDefault(e => e.ID == ReqEdu.Id) ??
+                            throw new InvalidOperationException(
+                                $"An education history with ID {ReqEdu.Id} was not found.");
+                        Education!.Started = ReqEdu.Started;
                         Education.Ended = ReqEdu.Ended;
                         Education.Title = ReqEdu.Title;
                         Education.Organization = ReqEdu.Organization;
@@ -290,9 +301,9 @@ static class MemberAPIs
 
                 // Remove Emails that do not exist
                 NewIDs = Request.Emails.Select(e => e.Id).ToList();
-                var EmailsToDelete = Context.Educations
-                    .Where(e => NewIDs.Contains(e.ID) && e.Member == Existing);
-                Context.Educations.RemoveRange(EmailsToDelete);
+                var EmailsToDelete = Context.Emails
+                    .Where(e => !NewIDs.Contains(e.ID) && e.Member == Existing);
+                Context.Emails.RemoveRange(EmailsToDelete);
 
                 // Add or Modify Emails
                 foreach (var ReqEmail in Request.Emails)
@@ -310,7 +321,9 @@ static class MemberAPIs
                     else
                     {
                         var Email = Context.Emails
-                            .First(e => e.ID == ReqEmail.Id);
+                            .FirstOrDefault(e => e.ID == ReqEmail.Id) ??
+                            throw new InvalidOperationException(
+                                $"An email with ID {ReqEmail.Id} was not found.");
                         Email.Email = ReqEmail.Email;
                         Email.Primary = ReqEmail.Primary;
                     }
@@ -319,7 +332,7 @@ static class MemberAPIs
                 // Remove Hobbies that do not exist
                 NewIDs = Request.Hobbies.Select(h => h.Id).ToList();
                 var HobbiesToDelete = Context.Hobbies
-                    .Where(h => NewIDs.Contains(h.ID) && h.Member == Existing);
+                    .Where(h => !NewIDs.Contains(h.ID) && h.Member == Existing);
                 Context.Hobbies.RemoveRange(HobbiesToDelete);
 
                 // Add or Modify Hobbies
@@ -341,7 +354,9 @@ static class MemberAPIs
                     else
                     {
                         var Hobby = Context.Hobbies
-                            .First(h => h.ID == ReqHobby.Id);
+                            .FirstOrDefault(h => h.ID == ReqHobby.Id) ??
+                            throw new InvalidOperationException(
+                                $"A hobby with ID {ReqHobby.Id} was not found.");
                         Hobby.Started = ReqHobby.Started;
                         Hobby.Ended = ReqHobby.Ended;
                         Hobby.Title = ReqHobby.Title;
@@ -353,7 +368,7 @@ static class MemberAPIs
                 // Remove Phone Numbers that do not exist
                 NewIDs = Request.Phones.Select(p => p.Id).ToList();
                 var PhonesToDelete = Context.Phones
-                    .Where(p => NewIDs.Contains(p.ID) && p.Member == Existing);
+                    .Where(p => !NewIDs.Contains(p.ID) && p.Member == Existing);
                 Context.Phones.RemoveRange(PhonesToDelete);
 
                 // Add or Modify Phones
@@ -372,7 +387,9 @@ static class MemberAPIs
                     else
                     {
                         var Phone = Context.Phones
-                            .First(p => p.ID == ReqPhone.Id);
+                            .FirstOrDefault(p => p.ID == ReqPhone.Id) ??
+                            throw new InvalidOperationException(
+                                $"An phone number with ID {ReqPhone.Id} was not found.");
                         Phone.Phone = ReqPhone.Phone_number;
                         Phone.Primary = ReqPhone.Primary;
                     }
@@ -381,7 +398,7 @@ static class MemberAPIs
                 // Remove Residences that do not exist
                 NewIDs = Request.Residences.Select(r => r.Id).ToList();
                 var ResToDelete = Context.Residences
-                    .Where(r => NewIDs.Contains(r.ID) && r.Member == Existing);
+                    .Where(r => !NewIDs.Contains(r.ID) && r.Member == Existing);
                 Context.Residences.RemoveRange(ResToDelete);
 
                 // Add or Modify Residences
@@ -405,7 +422,9 @@ static class MemberAPIs
                     else
                     {
                         var Residence = Context.Residences
-                            .First(r => r.ID == ReqRes.Id);
+                            .FirstOrDefault(r => r.ID == ReqRes.Id) ??
+                            throw new InvalidOperationException(
+                                $"A residence with ID {ReqRes.Id} was not found.");
                         Residence.Address_Line_1 = ReqRes.Addr_line_1;
                         Residence.Address_Line_2 = ReqRes.Addr_line_2;
                         Residence.City = ReqRes.City;
@@ -419,7 +438,7 @@ static class MemberAPIs
                 // Remove Spousal Relationships that do not exist
                 NewIDs = Request.Spouses.Select(s => s.Id).ToList();
                 var SpousesToDelete = Context.Spouses
-                    .Where(s => NewIDs.Contains(s.ID)
+                    .Where(s => !NewIDs.Contains(s.ID)
                         && (s.Wife == Existing || s.Husband == Existing));
                 Context.Spouses.RemoveRange(SpousesToDelete);
 
@@ -442,9 +461,10 @@ static class MemberAPIs
                     }
                     else
                     {
-                        var Spouse = Context.Spouses.First(s =>
-                            s.Husband.ID == ReqSpouse.Husband_id ||
-                            s.Wife.ID == ReqSpouse.Wife_id);
+                        var Spouse = Context.Spouses.FirstOrDefault(s =>
+                            s.ID == ReqSpouse.Id) ??
+                            throw new InvalidOperationException(
+                                $"An spousal relationship with ID {ReqSpouse.Id} was not found.");
                         Spouse.Husband = Husband;
                         Spouse.Wife = Wife;
                         Spouse.Started = ReqSpouse.Started;
@@ -455,7 +475,7 @@ static class MemberAPIs
                 // Remove Work Experiences that do not exist
                 NewIDs = Request.Work_history.Select(w => w.Id).ToList();
                 var WorksToDelete = Context.Works
-                    .Where(w => NewIDs.Contains(w.ID) && w.Member == Existing);
+                    .Where(w => !NewIDs.Contains(w.ID) && w.Member == Existing);
                 Context.Works.RemoveRange(WorksToDelete);
 
                 // Add or Modify Work Experiences
@@ -477,7 +497,9 @@ static class MemberAPIs
                     else
                     {
                         var Work = Context.Works
-                            .First(w => w.ID == ReqWork.Id);
+                            .FirstOrDefault(w => w.ID == ReqWork.Id) ??
+                            throw new InvalidOperationException(
+                                $"A work history with ID {ReqWork.Id} was not found.");
                         Work.Started = ReqWork.Started;
                         Work.Ended = ReqWork.Ended;
                         Work.Title = ReqWork.Title;
@@ -493,7 +515,7 @@ static class MemberAPIs
             }
             catch (ArgumentException a)
             {
-                Console.WriteLine($"Issue with PUT /trees/members/{{member_id}}: {a}");
+                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 400
@@ -501,7 +523,7 @@ static class MemberAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine($"Issue with PUT /trees/members/{{member_id}}: {a}");
+                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -509,7 +531,7 @@ static class MemberAPIs
             }
             catch (Exception e) when (e is ArgumentNullException || e is InvalidOperationException)
             {
-                Console.WriteLine($"Issue with PUT /trees/members/{{member_id}}: {e}");
+                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {e}");
                 return Results.Problem(
                     detail: e.Message,
                     statusCode: 404
@@ -517,7 +539,7 @@ static class MemberAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Issue with PUT /trees/members/{{member_id}}: {e}");
+                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
