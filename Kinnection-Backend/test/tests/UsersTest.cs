@@ -52,17 +52,17 @@ public class UsersTest
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
 
+        // Build expected output
+        RequestContent["id"] = JsonSerializer.SerializeToElement<int?>(null);
+        var Expected = JsonSerializer.SerializeToElement(RequestContent);
+        
         // Evaluate content
-        var output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+        var Output = JsonSerializer.Deserialize<JsonElement>(
             await Response.Content.ReadAsStringAsync());
-
-        output!["id"].GetInt32();
-        Assert.That(output["fname"].GetString(), Is.EqualTo(RequestContent["fname"].GetString()));
-        Assert.That(output["lname"].GetString(), Is.EqualTo(RequestContent["lname"].GetString()));
-        Assert.That(output["email"].GetString(), Is.EqualTo(RequestContent["email"].GetString()));
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
 
         // Save information to be used
-        UserInfo["id"] = output!["id"];
+        UserInfo["id"] = Output!.GetProperty("id");
     }
 
     [Test, Order(2)]
@@ -95,14 +95,15 @@ public class UsersTest
         TestRunner.CheckTokens(Response.Headers);
         TestRunner.SaveTokens(Response.Headers);
 
+        // Build expected output
+        RequestContent["id"] = JsonSerializer.SerializeToElement<int?>(null);
+        var Expected = JsonSerializer.SerializeToElement(RequestContent);
+
         // Evaluate content
-        var output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+        var Output = JsonSerializer.Deserialize<JsonElement>(
             await Response.Content.ReadAsStringAsync());
 
-        output!["id"].GetInt32();
-        Assert.That(output["fname"].GetString(), Is.EqualTo(RequestContent["fname"].GetString()));
-        Assert.That(output["lname"].GetString(), Is.EqualTo(RequestContent["lname"].GetString()));
-        Assert.That(output["email"].GetString(), Is.EqualTo(RequestContent["email"].GetString()));
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
     }
 
     [Test, Order(3)]
@@ -122,14 +123,21 @@ public class UsersTest
         TestRunner.CheckTokens(Response.Headers);
         TestRunner.SaveTokens(Response.Headers);
 
-        // Evaluate content
-        var output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-            await Response.Content.ReadAsStringAsync());
+        // Build expected output
+        var Expected = JsonSerializer.SerializeToElement(
+            new Dictionary<string, JsonElement>{
+                ["id"] = UserInfo["id"],
+                ["fname"] = UserInfo["fname"],
+                ["lname"] = UserInfo["lname"],
+                ["email"] = UserInfo["email"]
+            }
+        );
 
-        Assert.That(output!["id"].GetInt32(), Is.EqualTo(UserInfo["id"].GetInt32()));
-        Assert.That(output["fname"].GetString(), Is.EqualTo(UserInfo["fname"].GetString()));
-        Assert.That(output["lname"].GetString(), Is.EqualTo(UserInfo["lname"].GetString()));
-        Assert.That(output["email"].GetString(), Is.EqualTo(UserInfo["email"].GetString()));
+        // Evaluate content
+        var Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+        
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
     }
 
     [Test, Order(4)]

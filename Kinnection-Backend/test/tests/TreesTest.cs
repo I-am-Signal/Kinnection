@@ -54,18 +54,18 @@ public class TreesTest
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
 
-        // Evaluate content
-        var output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-            await Response.Content.ReadAsStringAsync());
+        // Build expected output
+        RequestContent["id"] = JsonSerializer.SerializeToElement<int?>(null);
+        var Expected = JsonSerializer.SerializeToElement(RequestContent);
 
-        output!["id"].GetInt32();
-        Assert.That(output["fname"].GetString(), Is.EqualTo(RequestContent["fname"].GetString()));
-        Assert.That(output["lname"].GetString(), Is.EqualTo(RequestContent["lname"].GetString()));
-        Assert.That(output["email"].GetString(), Is.EqualTo(RequestContent["email"].GetString()));
+        // Evaluate content
+        var Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
 
         // Save information to be used
-        UserInfo["id"] = output!["id"];
-        TreeInfo["user_id"] = output!["id"];
+        UserInfo["id"] = Output!.GetProperty("id");
+        TreeInfo["user_id"] = Output!.GetProperty("id");
     }
 
     [Test, Order(1)]
@@ -73,9 +73,7 @@ public class TreesTest
     {
         // Make request
         var RequestContent = new Dictionary<string, JsonElement>()
-        {
-            ["name"] = TreeInfo["name"]!
-        };
+        { ["name"] = TreeInfo["name"]! };
 
         HttpResponseMessage Response = await HttpService.PostAsync(
             URI + TreesSubDir,
@@ -94,21 +92,18 @@ public class TreesTest
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
 
+        // Build expected output
+        RequestContent["member_self_id"] = JsonSerializer.SerializeToElement<int?>(null);
+        RequestContent["id"] = RequestContent["member_self_id"];
+        var Expected = JsonSerializer.SerializeToElement(RequestContent);
+
         // Evaluate content
-        var output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+        var Output = JsonSerializer.Deserialize<JsonElement>(
             await Response.Content.ReadAsStringAsync());
-
-        foreach (var kvp in output!)
-        {
-            Console.WriteLine(kvp.Key + ": " + kvp.Value);
-        }
-
-        output!["id"].GetInt32();
-        Assert.That(output["name"].GetString(), Is.EqualTo(RequestContent["name"].GetString()));
-        Assert.That(output["member_self_id"].ValueKind, Is.EqualTo(JsonValueKind.Null));
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
 
         // Save information to be used
-        TreeInfo["id"] = output!["id"];
+        TreeInfo["id"] = Output!.GetProperty("id");
     }
 
     [Test, Order(2)]
@@ -131,11 +126,6 @@ public class TreesTest
             Headers: TestRunner.GetHeaders()
         );
 
-        Console.WriteLine("Status Code: " + Response.StatusCode);
-        Console.WriteLine("Reason Phrase: " + Response.ReasonPhrase);
-        Console.WriteLine("Content: " + await Response.Content.ReadAsStringAsync());
-
-
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
@@ -144,13 +134,14 @@ public class TreesTest
         TestRunner.CheckTokens(Response.Headers);
         TestRunner.SaveTokens(Response.Headers);
 
-        // Evaluate content
-        var output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-            await Response.Content.ReadAsStringAsync());
+        // Build expected output
+        RequestContent["id"] = JsonSerializer.SerializeToElement<int?>(null);
+        var Expected = JsonSerializer.SerializeToElement(RequestContent);
 
-        output!["id"].GetInt32();
-        Assert.That(output["name"].GetString(), Is.EqualTo(RequestContent["name"].GetString()));
-        Assert.That(output["member_self_id"].GetInt32(), Is.EqualTo(RequestContent["member_self_id"].GetInt32()));
+        // Evaluate content
+        var Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
     }
 
     [Test, Order(3)]
@@ -170,38 +161,21 @@ public class TreesTest
         TestRunner.CheckTokens(Response.Headers);
         TestRunner.SaveTokens(Response.Headers);
 
-        // Evaluate content
-        var output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-            await Response.Content.ReadAsStringAsync());
+        // Build expected output
+        var Expected = JsonSerializer.SerializeToElement(
+            new
+            {
+                id = TreeInfo["id"],
+                name = TreeInfo["name"],
+                member_self_id = TreeInfo["member_self_id"],
+                members = JsonSerializer.SerializeToElement<List<GetTreesMembersResponse>>([])
+            }
+        );
 
-        Assert.That(output!["id"].GetInt32(), Is.EqualTo(TreeInfo["id"].GetInt32()));
-        Assert.That(output["name"].GetString(), Is.EqualTo(TreeInfo["name"].GetString()));
-        Assert.That(output["member_self_id"].GetInt32(), Is.EqualTo(TreeInfo["member_self_id"].GetInt32()));
-        foreach (JsonElement Element in output["members"].EnumerateArray())
-        {
-            Element.GetProperty("id").GetInt32();
-            Element.GetProperty("fname").GetString();
-            Element.GetProperty("mnames").GetString();
-            Element.GetProperty("lname").GetString();
-            Element.GetProperty("sex").GetBoolean();
-            Element.GetProperty("dob").GetDateTime();
-            Element.GetProperty("dod").GetDateTime();
-            foreach (JsonElement SubElement in Element.GetProperty("spouses").EnumerateArray())
-            {
-                SubElement.GetProperty("id").GetInt32();
-                SubElement.GetProperty("husband_id").GetInt32();
-                SubElement.GetProperty("wife_id").GetInt32();
-                SubElement.GetProperty("started").GetDateTime();
-                SubElement.GetProperty("ended").GetDateTime();
-            }
-            foreach (JsonElement SubElement in Element.GetProperty("children").EnumerateArray())
-            {
-                SubElement.GetProperty("id").GetInt32();
-                SubElement.GetProperty("parent_id").GetInt32();
-                SubElement.GetProperty("child_id").GetInt32();
-                SubElement.GetProperty("adopted").GetDateTime();
-            }
-        }
+        // Evaluate content
+        var Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
     }
 
     [Test, Order(4)]
@@ -220,18 +194,22 @@ public class TreesTest
         TestRunner.CheckTokens(Response.Headers);
         TestRunner.SaveTokens(Response.Headers);
 
-        // Evaluate content
-        var output = JsonSerializer.Deserialize<JsonElement>(
-            await Response.Content.ReadAsStringAsync());
-
-        foreach (var Element in output!.GetProperty("trees").EnumerateArray())
+        // Build expected output
+        var Expected = JsonSerializer.SerializeToElement(new
         {
-            Element.GetProperty("id").GetInt32();
-            Element.GetProperty("name").GetString();
-            var MemSelfID = Element.GetProperty("member_self_id");
-            if (MemSelfID.ValueKind != JsonValueKind.Null)
-                MemSelfID.GetInt32();
-        }
+            trees = new[] {
+                new {
+                    id = TreeInfo["id"],
+                    name = TreeInfo["name"],
+                    member_self_id = TreeInfo["member_self_id"],
+                }
+            }
+        });
+
+        // Evaluate content
+        var Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+        TestRunner.EvaluateJsonElementObject(Output, Expected);
     }
 
     [Test, Order(5)]
