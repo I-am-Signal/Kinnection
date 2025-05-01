@@ -52,7 +52,7 @@ static class UserAPIs
                 Password NewPass = new Password
                 {
                     Created = DateTime.UtcNow,
-                    UserID = NewUser.ID,
+                    User = NewUser,
                     PassString = PassHash
                 };
 
@@ -216,9 +216,9 @@ static class UserAPIs
 
                 // Remove the user's associated records
                 Context.Passwords.RemoveRange(
-                    Context.Passwords.Where(p => p.UserID == UserToDelete.ID));
+                    Context.Passwords.Where(p => p.User.ID == UserToDelete.ID));
                 Context.Authentications.RemoveRange(
-                    Context.Authentications.Where(a => a.UserID == UserToDelete.ID));
+                    Context.Authentications.Where(a => a.User.ID == UserToDelete.ID));
                 Context.Users.Remove(UserToDelete);
 
                 Context.SaveChanges();

@@ -18,7 +18,7 @@ namespace Kinnection
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
-        public required int UserID { get; set; }
+        public required User User { get; set; }
         public required string PassString { get; set; }
     }
 
@@ -27,7 +27,7 @@ namespace Kinnection
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ID { get; set; }
         public required DateTime Created { get; set; } = DateTime.UtcNow;
-        public required int UserID { get; set; }
+        public required User User { get; set; }
         public required string Authorization { get; set; }
         public required string Refresh { get; set; }
         public required string PrevRef { get; set; }

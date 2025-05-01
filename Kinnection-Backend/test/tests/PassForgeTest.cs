@@ -41,7 +41,7 @@ public class PassForgeTest
         Context!.Add(new Password
         {
             Created = DateTime.UtcNow,
-            UserID = PassUser.ID,
+            User = PassUser,
             PassString = Hash
         });
         Context.SaveChanges();
@@ -71,7 +71,7 @@ public class PassForgeTest
     {
         // Remove new user
         Context!.Passwords.RemoveRange(
-            Context.Passwords.Where(p => p.UserID == PassUser.ID));
+            Context.Passwords.Where(p => p.User.ID == PassUser.ID));
         Context.Users.Remove(PassUser);
 
         Context.SaveChanges();

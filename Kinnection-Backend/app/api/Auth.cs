@@ -21,7 +21,7 @@ static class AuthAPIs
                 // Ensure user's password exists
                 var ExistingPass = Context.Passwords
                     .OrderByDescending(p => p.Created)
-                    .FirstOrDefault(p => p.UserID == ExistingUser!.ID) ??
+                    .FirstOrDefault(p => p.User.ID == ExistingUser!.ID) ??
                         throw new ApplicationException(
                             $"User {ExistingUser.ID} exists, but no associated password object also exists. Please contact support.");
 

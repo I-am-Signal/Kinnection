@@ -96,7 +96,7 @@ public class AuthenticatorTest
     {
         // Remove new user
         Context!.Authentications.RemoveRange(
-            Context.Authentications.Where(a => a.UserID == AuthUser.ID));
+            Context.Authentications.Where(a => a.User.ID == AuthUser.ID));
         Context.Users.Remove(AuthUser);
 
         Context.SaveChanges();

@@ -58,7 +58,7 @@ public static class Authenticator
         if (UserID != RefreshUserID)
             throw new AuthenticationException("Tokens do not match.");
 
-        var Auth = Context.Authentications.FirstOrDefault(b => b.UserID == UserID)
+        var Auth = Context.Authentications.FirstOrDefault(b => b.User.ID == UserID)
             ?? throw new KeyNotFoundException($"User with ID {UserID} is not logged in.");
 
         // Verify access token matches user
@@ -290,7 +290,7 @@ public static class Authenticator
 
         // Get the existing user to ensure that this is being created for a real user
         var ExistingUser = Context.Users.FirstOrDefault(u => u.ID == UserID);
-        var Auth = Context.Authentications.FirstOrDefault(b => b.UserID == UserID);
+        var Auth = Context.Authentications.FirstOrDefault(b => b.User.ID == UserID);
 
         string AccessToken = SignToken(GenerateAccessPayload(UserID));
         string RefreshToken = SignToken(GenerateRefreshPayload(UserID));
@@ -306,7 +306,7 @@ public static class Authenticator
             Auth = new Authentication
             {
                 Created = DateTime.UtcNow,
-                UserID = UserID,
+                User = ExistingUser,
                 Authorization = AccessHash,
                 Refresh = RefreshHash,
                 PrevRef = ""

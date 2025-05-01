@@ -53,7 +53,7 @@ namespace Kinnection
             using var Context = DatabaseManager.GetActiveContext();
             string PassHash = Context.Passwords
                 .OrderByDescending(p => p.Created)
-                .First(p => p.UserID == UserID).PassString;
+                .First(p => p.User.ID == UserID).PassString;
 
             try
             {
