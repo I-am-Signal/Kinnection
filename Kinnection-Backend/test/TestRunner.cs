@@ -125,28 +125,38 @@ public static class TestRunner
         switch (Object.ValueKind)
         {
             case JsonValueKind.String:
-                Console.WriteLine($"Object: \"{Object.GetString()}\", Expected: \"{Expected.GetString()}\"");
-                Assert.That(Object.GetString(), Is.EqualTo(Expected.GetString()));
+                Assert.That(
+                    Object.GetString(), 
+                    Is.EqualTo(Expected.GetString()),
+                    $"Object: \"{Object.GetString()}\", Expected: \"{Expected.GetString()}\"");
                 break;
             case JsonValueKind.Number:
-                Console.WriteLine($"Object: \"{Object.GetInt32()}\", Expected: \"{Expected.GetInt32()}\"");
-                Assert.That(Object.GetInt32(), Is.EqualTo(Expected.GetInt32()));
+                Assert.That(
+                    Object.GetInt32(), 
+                    Is.EqualTo(Expected.GetInt32()),
+                    $"Object: \"{Object.GetInt32()}\", Expected: \"{Expected.GetInt32()}\"");
                 break;
             case JsonValueKind.True:
             case JsonValueKind.False:
-                Console.WriteLine($"Object: \"{Object.GetBoolean()}\", Expected: \"{Expected.GetBoolean()}\"");
-                Assert.That(Object.GetBoolean(), Is.EqualTo(Expected.GetBoolean()));
+                Assert.That(
+                    Object.GetBoolean(),
+                    Is.EqualTo(Expected.GetBoolean()),
+                    $"Object: \"{Object.GetBoolean()}\", Expected: \"{Expected.GetBoolean()}\"");
                 break;
             case JsonValueKind.Null:
-                Console.WriteLine($"Object: \"{Object.ValueKind}\", Expected: \"{Expected.ValueKind}\"");
-                Assert.That(Expected.ValueKind, Is.EqualTo(JsonValueKind.Null));
+                Assert.That(
+                    Expected.ValueKind, 
+                    Is.EqualTo(JsonValueKind.Null),
+                    $"Object: \"{Object.ValueKind}\", Expected: \"{Expected.ValueKind}\"");
                 break;
             case JsonValueKind.Array:
                 var ObjArr = Object.EnumerateArray();
                 var ExpArr = Expected.EnumerateArray();
 
-                Console.WriteLine($"Object: \"{ObjArr.Count()}\", Expected: \"{ExpArr.Count()}\"");
-                Assert.That(ObjArr.Count(), Is.EqualTo(ExpArr.Count()));
+                Assert.That(
+                    ObjArr.Count(), 
+                    Is.EqualTo(ExpArr.Count()),
+                    $"Object: \"{ObjArr.Count()}\", Expected: \"{ExpArr.Count()}\"");
 
                 var ObjEnum = ObjArr.GetEnumerator();
                 var ExpEnum = ExpArr.GetEnumerator();
