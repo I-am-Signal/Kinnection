@@ -7,6 +7,17 @@ namespace Kinnection
         public required string Password { get; set; }
     }
 
+    // Auth/Pass
+    public class ForgotPassRequest
+    {
+        public required string Email { get; set; }
+    }
+
+    public class ResetPassRequest
+    {
+        public required string Password { get; set; }
+    }
+
     // Trees
     public class PostTreesRequest
     {

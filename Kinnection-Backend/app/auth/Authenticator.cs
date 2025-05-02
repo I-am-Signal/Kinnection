@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -155,7 +156,7 @@ public static class Authenticator
     /// </summary>
     /// <param name="ExpirationTime"></param>
     /// <returns></returns>
-    private static bool IsExpired(DateTimeOffset ExpirationTime)
+    public static bool IsExpired(DateTimeOffset ExpirationTime)
     {
         return DateTimeOffset.Compare(
             ExpirationTime,
@@ -183,6 +184,40 @@ public static class Authenticator
                 exp = ExpiresAt,
                 iat = IssuedAt
             });
+    }
+
+    /// <summary>
+    /// Generates a token for use in password resetting
+    /// </summary>
+    /// <param name="Email"></param>
+    /// <returns>(Password Reset Token, Password Reset URL)</returns>
+    public static string GeneratePassResetURL(
+        string Email)
+    {
+        using var Context = DatabaseManager.GetActiveContext();
+
+        var CurrAuth = Context.Authentications
+            .Include(a => a.User)
+            .First(a => a.User.Email == Email);
+
+        long IssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        long ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15).ToUnixTimeSeconds();
+
+        var SignedToken = SignToken(JsonSerializer.Serialize(
+            new
+            {
+                iss = ISSUER,
+                sub = CurrAuth.User.ID,
+                exp = ExpiresAt,
+                iat = IssuedAt,
+                res = true // specific reset attribute to differentiate tokens
+            }));
+
+        CurrAuth.Refresh = SignedToken.Split(".")[2];
+        Context.SaveChanges();
+
+        // Change to route used in frontend
+        return Base64UrlEncoder.Encode(SignedToken);;
     }
 
     /// <summary>
