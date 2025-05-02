@@ -60,6 +60,10 @@ services:
       REFRESH_DURATION: ${REFRESH_DURATION}
       ISSUER: ${ISSUER}
       KEY: ${KEY}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      FROM_EMAIL: ${FROM_EMAIL}
+      FROM_NAME: ${FROM_NAME}
+      ASP_PORT: ${ASP_PORT}
     depends_on:
       - mysql
 
