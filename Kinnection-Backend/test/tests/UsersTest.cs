@@ -32,8 +32,7 @@ public class UsersTest
             ["lname"] = UserInfo["lname"]!,
             ["email"] = UserInfo["email"]!,
             ["password"] = JsonSerializer.SerializeToElement(KeyMaster.Encrypt(
-                UserInfo["password"].GetString()!,
-                TestRunner.EncryptionKeys.Public))
+                UserInfo["password"].GetString()!))
         };
 
         HttpResponseMessage Response = await HttpService.PostAsync(

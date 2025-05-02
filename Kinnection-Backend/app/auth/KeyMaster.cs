@@ -23,16 +23,18 @@ public static class KeyMaster
     /// <param name="EncryptedText"></param>
     /// <param name="PrivateKey"></param>
     /// <returns></returns>
-    public static string Decrypt(string EncryptedText, string PrivateKey)
+    public static string Decrypt(string EncryptedText)
     {
         try
         {
             using RSA rsa = RSA.Create();
-            rsa.ImportPkcs8PrivateKey(Convert.FromBase64String(PrivateKey), out _);
+            rsa.ImportPkcs8PrivateKey(Convert.FromBase64String(GetKeys().Private), out _);
             byte[] decryptedData = rsa.Decrypt(Convert.FromBase64String(EncryptedText), RSAEncryptionPadding.OaepSHA256);
             return Encoding.UTF8.GetString(decryptedData);
         }
-        catch (FormatException) { throw new ArgumentException(); }
+        catch (FormatException f) { 
+            Console.WriteLine(f);
+            throw new ArgumentException(); }
     }
 
     /// <summary>
@@ -41,10 +43,10 @@ public static class KeyMaster
     /// <param name="PlainText"></param>
     /// <param name="PublicKey"></param>
     /// <returns></returns>
-    public static string Encrypt(string PlainText, string PublicKey)
+    public static string Encrypt(string PlainText)
     {
         using RSA rsa = RSA.Create();
-        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(PublicKey), out _);
+        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(GetKeys().Public), out _);
         byte[] encryptedData = rsa.Encrypt(Encoding.UTF8.GetBytes(PlainText), RSAEncryptionPadding.OaepSHA256);
         return Convert.ToBase64String(encryptedData);
     }

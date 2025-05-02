@@ -31,9 +31,7 @@ static class UserAPIs
 
                 // Hash password
                 string PassHash = PassForge.HashPass(
-                    KeyMaster.Decrypt(
-                        request.Password,
-                        EncryptionKeys.Private));
+                    KeyMaster.Decrypt(request.Password));
 
                 // Create the new user
                 var NewUser = new User
