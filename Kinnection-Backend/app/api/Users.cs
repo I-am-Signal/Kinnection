@@ -18,10 +18,8 @@ static class UserAPIs
                     .FirstOrDefault(e => e.Email == request.Email);
 
                 if (Existing != null)
-                {
                     throw new InvalidOperationException(
                         $"A User with email {request.Email} already exists.");
-                }
 
                 // Validate required fields
                 if (string.IsNullOrEmpty(request.Password))
@@ -79,8 +77,7 @@ static class UserAPIs
                 Console.WriteLine($"Issue with POST /users/: {a}");
                 return Results.Problem(
                     detail: a.Message,
-                    statusCode: 401
-                );
+                    statusCode: 401);
             }
             catch (InvalidOperationException i)
             {
@@ -106,11 +103,12 @@ static class UserAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Modify and save user
                 var existing = Context.Users
-                    .First(b => b.ID == id);
+                    // Check authorization
+                    .First(b => b.ID == id && b.ID == UserID);
 
                 existing.Fname = request.Fname;
                 existing.Lname = request.Lname;
@@ -159,18 +157,25 @@ static class UserAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
+
+                // Authorize
+                if (UserID != id)
+                    throw new AuthenticationException("Cannot view a user account other than your own.");
 
                 // Compile response
                 return Results.Ok(
-                    Context.Users.Select(user => new GetUsersResponse
+                    Context.Users
+                    // Check authorization
+                    .Where(u => u.ID == id && u.ID == UserID)
+                    .Select(user => new GetUsersResponse
                     {
                         Id = user.ID,
                         Fname = user.Fname,
                         Lname = user.Lname,
                         Email = user.Email
                     })
-                    .Single(u => u.Id == id)
+                    .Single()
                 );
             }
             catch (AuthenticationException a)
@@ -205,20 +210,15 @@ static class UserAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context);
 
                 // Find the user to delete
                 var UserToDelete = Context.Users
-                    .FirstOrDefault(u => u.ID == id) ??
+                    // Check authorization
+                    .FirstOrDefault(u => u.ID == id && u.ID == UserID) ??
                         throw new InvalidOperationException($"User with ID {id} not found.");
 
-                // Remove the user's associated records
-                Context.Passwords.RemoveRange(
-                    Context.Passwords.Where(p => p.User.ID == UserToDelete.ID));
-                Context.Authentications.RemoveRange(
-                    Context.Authentications.Where(a => a.User.ID == UserToDelete.ID));
                 Context.Users.Remove(UserToDelete);
-
                 Context.SaveChanges();
 
                 // Return a 204 No Content response

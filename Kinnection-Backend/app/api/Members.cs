@@ -7,6 +7,7 @@ static class MemberAPIs
 {
     /// <summary>
     /// Compiles and returns a complete GetIndividualMembersResponse object from a Member object.
+    /// NOTE: Only call this method to compile the whole member response AFTER an authorization check.
     /// </summary>
     /// <param name="member"></param>
     /// <param name="Context"></param>
@@ -28,6 +29,8 @@ static class MemberAPIs
             Ethnicity = member.Ethnicity,
             Biography = member.Biography,
             Children = Context.ParentalRelationships
+                .Include(pcr => pcr.Parent.Tree)
+                .Where(pcr => pcr.Parent.ID == member.ID || pcr.Child.ID == member.ID)
                 .Select(pcr => new GetChildrenResponse
                 {
                     Id = pcr.ID,
@@ -36,10 +39,9 @@ static class MemberAPIs
                     Adopted = pcr.Adopted
                 })
                 .OrderBy(pcr => pcr.Id)
-                .Where(pcr => pcr.Parent_id == member.ID || pcr.Child_id == member.ID)
                 .ToList(),
             Education_history = Context.Educations
-                .Include(education => education.Member)
+                .Include(education => education.Member.Tree)
                 .Where(education => education.Member.ID == member.ID)
                 .Select(education => new GetEducationResponse
                 {
@@ -53,7 +55,7 @@ static class MemberAPIs
                 .OrderBy(education => education.Id)
                 .ToList(),
             Emails = Context.Emails
-                .Include(email => email.Member)
+                .Include(email => email.Member.Tree)
                 .Where(email => email.Member.ID == member.ID)
                 .Select(email => new GetEmailsResponse
                 {
@@ -64,7 +66,7 @@ static class MemberAPIs
                 .OrderBy(email => email.Id)
                 .ToList(),
             Hobbies = Context.Hobbies
-                .Include(hobby => hobby.Member)
+                .Include(hobby => hobby.Member.Tree)
                 .Where(hobby => hobby.Member.ID == member.ID)
                 .Select(hobby => new GetHobbiesResponse
                 {
@@ -78,7 +80,7 @@ static class MemberAPIs
                 .OrderBy(hobby => hobby.Id)
                 .ToList(),
             Phones = Context.Phones
-                .Include(phone => phone.Member)
+                .Include(phone => phone.Member.Tree)
                 .Where(phone => phone.Member.ID == member.ID)
                 .Select(phone => new GetPhonesResponse
                 {
@@ -89,7 +91,7 @@ static class MemberAPIs
                 .OrderBy(phone => phone.Id)
                 .ToList(),
             Residences = Context.Residences
-                .Include(residence => residence.Member)
+                .Include(residence => residence.Member.Tree)
                 .Where(residence => residence.Member.ID == member.ID)
                 .Select(residence => new GetResidencesResponse
                 {
@@ -103,6 +105,8 @@ static class MemberAPIs
                 .OrderBy(residence => residence.Id)
                 .ToList(),
             Spouses = Context.Spouses
+                .Include(spouse => spouse.Husband.Tree)
+                .Where(spouse => spouse.Husband.ID == member.ID || spouse.Wife.ID == member.ID)
                 .Select(spouse => new GetSpousesResponse
                 {
                     Id = spouse.ID,
@@ -112,10 +116,9 @@ static class MemberAPIs
                     Ended = spouse.Ended
                 })
                 .OrderBy(spouse => spouse.Id)
-                .Where(spouse => spouse.Husband_id == member.ID || spouse.Wife_id == member.ID)
                 .ToList(),
             Work_history = Context.Works
-                .Include(work => work.Member)
+                .Include(work => work.Member.Tree)
                 .Where(work => work.Member.ID == member.ID)
                 .Select(work => new GetWorkResponse
                 {
@@ -138,14 +141,20 @@ static class MemberAPIs
             try
             {
                 using var Context = DatabaseManager.GetActiveContext();
-                Authenticator.Authenticate(Context: Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
-                var EncryptionKeys = KeyMaster.GetKeys();
+                var Tree = Context.Trees.FirstOrDefault(t => t.ID == tree_id &&
+                    t.User.ID == UserID); // Check authorization
+
+                if (Tree == null)
+                    return Results.Problem(
+                        statusCode: 403,
+                        detail: "Unable to create Tree: Cannot create a tree for a user account other than your own.");
 
                 // Create the new member
                 var NewMember = new Member
                 {
-                    Tree = Context.Trees.First(t => t.ID == tree_id),
+                    Tree = Tree,
                     Created = DateTime.UtcNow,
                     Fname = Request.Fname,
                     Mnames = Request.Mnames,
@@ -168,14 +177,14 @@ static class MemberAPIs
             }
             catch (ArgumentException a)
             {
-                Console.WriteLine($"Issue with POST /trees/{{tree_id}}/members/: {a}");
+                Console.WriteLine($"Issue with POST /trees/{tree_id}/members/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 400);
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine($"Issue with POST /trees/{{tree_id}}/members/: {a}");
+                Console.WriteLine($"Issue with POST /trees/{tree_id}/members/: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -183,14 +192,14 @@ static class MemberAPIs
             }
             catch (KeyNotFoundException k)
             {
-                Console.WriteLine($"Issue with POST /trees/{{tree_id}}/members/: {k}");
+                Console.WriteLine($"Issue with POST /trees/{tree_id}/members/: {k}");
                 return Results.Problem(
                     detail: k.Message,
                     statusCode: 409);
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Issue with POST /trees/{{tree_id}}/members/: {e}");
+                Console.WriteLine($"Issue with POST /trees/{tree_id}/members/: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -198,19 +207,21 @@ static class MemberAPIs
         .WithOpenApi();
 
 
-        app.MapPut("/trees/{tree_id}/members/{member_id}", (
-            int tree_id, int member_id, HttpContext httpContext, PutMembersRequest Request) =>
+        app.MapPut("/trees/members/{member_id}", (
+            int member_id, HttpContext httpContext, PutMembersRequest Request) =>
         {
             try
             {
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
-                // Modify User
+                // Modify Member
                 var Existing = Context.Members
-                    .First(m => m.ID == member_id);
+                    .Include(m => m.Tree)
+                    .First(m => m.ID == member_id &&
+                        m.Tree.User.ID == UserID); // Check authorization
                 Existing.Fname = Request.Fname;
                 Existing.Mnames = Request.Mnames;
                 Existing.Lname = Request.Lname;
@@ -223,16 +234,19 @@ static class MemberAPIs
                 Existing.Ethnicity = Request.Ethnicity;
                 Existing.Biography = Request.Biography;
 
+                var Tree_ID = Existing.Tree.ID;
+
                 // Get list of all members of the tree
                 var Members = Context.Members
-                    .Where(m => m.Tree.ID == tree_id)
+                    .Where(m => m.Tree.ID == Tree_ID)
                     .ToDictionary(m => m.ID);
 
                 // Remove Parental Relationships that do not exist
                 var NewIDs = Request.Children.Select(c => c.Id).ToList();
                 var PRsToDelete = Context.ParentalRelationships
-                    .Where(p => !NewIDs.Contains(p.ID)
-                        && (p.Child == Existing || p.Parent == Existing));
+                    .Include(p => p.Child)
+                    .Where(p => !NewIDs.Contains(p.ID) &&
+                        (p.Child == Existing || p.Parent == Existing));
                 Context.ParentalRelationships.RemoveRange(PRsToDelete);
 
                 // Add or Modify ParentalRelationships
@@ -254,7 +268,8 @@ static class MemberAPIs
                     else
                     {
                         var rel = Context.ParentalRelationships
-                            .FirstOrDefault(p => p.ID == child.Id) ??
+                            .Include(p => p.Child)
+                            .FirstOrDefault(p => p.ID == child.Id && p.Child.Tree.ID == Tree_ID) ??
                             throw new InvalidOperationException(
                                 $"An education history with ID {child.Id} was not found.");
                         rel.Child = ChildMember;
@@ -288,7 +303,7 @@ static class MemberAPIs
                     else
                     {
                         var Education = Context.Educations
-                            .FirstOrDefault(e => e.ID == ReqEdu.Id) ??
+                            .FirstOrDefault(e => e.ID == ReqEdu.Id && e.Member == Existing) ??
                             throw new InvalidOperationException(
                                 $"An education history with ID {ReqEdu.Id} was not found.");
                         Education!.Started = ReqEdu.Started;
@@ -321,7 +336,7 @@ static class MemberAPIs
                     else
                     {
                         var Email = Context.Emails
-                            .FirstOrDefault(e => e.ID == ReqEmail.Id) ??
+                            .FirstOrDefault(e => e.ID == ReqEmail.Id && e.Member == Existing) ??
                             throw new InvalidOperationException(
                                 $"An email with ID {ReqEmail.Id} was not found.");
                         Email.Email = ReqEmail.Email;
@@ -354,7 +369,7 @@ static class MemberAPIs
                     else
                     {
                         var Hobby = Context.Hobbies
-                            .FirstOrDefault(h => h.ID == ReqHobby.Id) ??
+                            .FirstOrDefault(h => h.ID == ReqHobby.Id && h.Member == Existing) ??
                             throw new InvalidOperationException(
                                 $"A hobby with ID {ReqHobby.Id} was not found.");
                         Hobby.Started = ReqHobby.Started;
@@ -387,7 +402,7 @@ static class MemberAPIs
                     else
                     {
                         var Phone = Context.Phones
-                            .FirstOrDefault(p => p.ID == ReqPhone.Id) ??
+                            .FirstOrDefault(p => p.ID == ReqPhone.Id && p.Member == Existing) ??
                             throw new InvalidOperationException(
                                 $"An phone number with ID {ReqPhone.Id} was not found.");
                         Phone.Phone = ReqPhone.Phone_number;
@@ -422,7 +437,7 @@ static class MemberAPIs
                     else
                     {
                         var Residence = Context.Residences
-                            .FirstOrDefault(r => r.ID == ReqRes.Id) ??
+                            .FirstOrDefault(r => r.ID == ReqRes.Id && r.Member == Existing) ??
                             throw new InvalidOperationException(
                                 $"A residence with ID {ReqRes.Id} was not found.");
                         Residence.Address_Line_1 = ReqRes.Addr_line_1;
@@ -461,8 +476,8 @@ static class MemberAPIs
                     }
                     else
                     {
-                        var Spouse = Context.Spouses.FirstOrDefault(s =>
-                            s.ID == ReqSpouse.Id) ??
+                        var Spouse = Context.Spouses.FirstOrDefault(s => s.ID == ReqSpouse.Id &&
+                            (s.Wife == Existing || s.Husband == Existing)) ??
                             throw new InvalidOperationException(
                                 $"An spousal relationship with ID {ReqSpouse.Id} was not found.");
                         Spouse.Husband = Husband;
@@ -497,7 +512,7 @@ static class MemberAPIs
                     else
                     {
                         var Work = Context.Works
-                            .FirstOrDefault(w => w.ID == ReqWork.Id) ??
+                            .FirstOrDefault(w => w.ID == ReqWork.Id && w.Member == Existing) ??
                             throw new InvalidOperationException(
                                 $"A work history with ID {ReqWork.Id} was not found.");
                         Work.Started = ReqWork.Started;
@@ -515,7 +530,7 @@ static class MemberAPIs
             }
             catch (ArgumentException a)
             {
-                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {a}");
+                Console.WriteLine($"Issue with PUT /trees/members/{member_id}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 400
@@ -523,7 +538,7 @@ static class MemberAPIs
             }
             catch (AuthenticationException a)
             {
-                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {a}");
+                Console.WriteLine($"Issue with PUT /trees/members/{member_id}: {a}");
                 return Results.Problem(
                     detail: a.Message,
                     statusCode: 401
@@ -531,7 +546,7 @@ static class MemberAPIs
             }
             catch (Exception e) when (e is ArgumentNullException || e is InvalidOperationException)
             {
-                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {e}");
+                Console.WriteLine($"Issue with PUT /trees/members/{member_id}: {e}");
                 return Results.Problem(
                     detail: e.Message,
                     statusCode: 404
@@ -539,7 +554,7 @@ static class MemberAPIs
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Issue with PUT /trees/{tree_id}/members/{member_id}: {e}");
+                Console.WriteLine($"Issue with PUT /trees/members/{member_id}: {e}");
                 return Results.Problem(statusCode: 500);
             }
         })
@@ -553,11 +568,12 @@ static class MemberAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Compile response
                 var Member = Context.Members
-                    .Where(member => member.ID == member_id)
+                    .Include(m => m.Tree)
+                    .Where(m => m.ID == member_id && m.Tree.User.ID == UserID)
                     .Single();
 
                 return Results.Ok(CompileWholeMember(Member, Context));
@@ -594,11 +610,12 @@ static class MemberAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Find the user to delete
                 var MemberToDelete = Context.Members
-                    .FirstOrDefault(m => m.ID == member_id) ??
+                    .Include(m => m.Tree)
+                    .FirstOrDefault(m => m.ID == member_id && m.Tree.User.ID == UserID) ??
                         throw new InvalidOperationException($"Member with ID {member_id} not found.");
 
                 // Remove Parent/Child relationships

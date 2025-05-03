@@ -12,10 +12,7 @@ static class TreeAPIs
             try
             {
                 using var Context = DatabaseManager.GetActiveContext();
-                var (_, UserID) = Authenticator.Authenticate(
-                    Context: Context, httpContext: httpContext);
-
-                var EncryptionKeys = KeyMaster.GetKeys();
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Validate required fields
                 if (string.IsNullOrEmpty(request.Name))
@@ -24,6 +21,7 @@ static class TreeAPIs
                 // Create the new tree
                 var NewTree = new Tree
                 {
+                    // Check authorization
                     User = Context.Users.First(u => u.ID == UserID),
                     Created = DateTime.UtcNow,
                     Name = request.Name,
@@ -80,11 +78,12 @@ static class TreeAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Modify and save user
                 var Existing = Context.Trees
-                    .First(t => t.ID == tree_id);
+                    // Check authorization
+                    .First(t => t.ID == tree_id && t.User.ID == UserID);
 
                 // Validate required fields
                 if (string.IsNullOrEmpty(request.Name))
@@ -144,12 +143,16 @@ static class TreeAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Compile response
+                var Tree = Context.Trees
+                    // Check authorization
+                    .First(t => t.ID == tree_id && t.User.ID == UserID);
+
                 var Members = Context.Members
                     .Include(member => member.Tree)
-                    .Where(member => member.Tree.ID == tree_id)
+                    .Where(member => member.Tree.ID == tree_id && member.Tree.User.ID == UserID)
                     .Select(member => new GetTreesMembersResponse
                     {
                         Id = member.ID,
@@ -182,8 +185,6 @@ static class TreeAPIs
                             .ToList()
                     })
                     .ToList();
-
-                var Tree = Context.Trees.Where(t => t.ID == tree_id).First();
 
                 return Results.Ok(
                     new GetIndividualTreesResponse
@@ -232,7 +233,7 @@ static class TreeAPIs
                 return Results.Ok(
                     new GetAllTreesResponse
                     {
-                        Trees = Context.Trees.Include(t => t.User)
+                        Trees = Context.Trees
                             .Where(t => t.User.ID == UserID)
                             .Select(tree => new GetTreesResponse
                             {
@@ -240,6 +241,7 @@ static class TreeAPIs
                                 Name = tree.Name,
                                 Member_self_id = tree.SelfID
                             })
+                            .OrderBy(t => t.Id)
                             .ToList()
                     }
                 );
@@ -276,11 +278,11 @@ static class TreeAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Find the user to delete
                 var TreeToDelete = Context.Trees
-                    .FirstOrDefault(t => t.ID == tree_id) ??
+                    .FirstOrDefault(t => t.ID == tree_id && t.User.ID == UserID) ??
                         throw new InvalidOperationException($"Tree with ID {tree_id} not found.");
 
                 Context.Trees.Remove(TreeToDelete);

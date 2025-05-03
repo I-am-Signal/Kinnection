@@ -32,12 +32,12 @@ public class MembersTest
             {
                 id = (int?)null,
                 fname = "Mem",
-                mnames = "Ber Mem",
+                mnames = (string?)null,
                 lname = "Ber",
                 sex = false,
-                dob = "2000-01-01",
+                dob = (DateOnly?)null,
                 birthplace = (string?)null,
-                dod = "2026-01-01",
+                dod = (DateOnly?)null,
                 deathplace = (string?)null,
                 death_cause = (string?)null,
                 ethnicity = (string?)null,
@@ -198,8 +198,7 @@ public class MembersTest
         // -----------------------------------------------------------------
  
         // Designate endpoint to hit
-        PutURL = URI + TreesSubDir + TreeInfo["id"].GetInt32() + '/'
-            + MembersSubDir + MemberInfo["id"].GetInt32();
+        PutURL = URI + TreesSubDir + MembersSubDir + MemberInfo["id"].GetInt32();
 
         // Make Test Member 2
         var RequestContent = BuildRequestContent();
@@ -415,7 +414,7 @@ public class MembersTest
     }
 
     [Test, Order(4)]
-    public async Task PosPutMember3()
+    public async Task PosPutMembers3()
     {
 
         // -----------------------------------------------------------------
@@ -996,6 +995,52 @@ public class MembersTest
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Remove all previous data
+        MemberInfo = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+            JsonSerializer.Serialize(new
+            {
+                id = MemberInfo["id"].GetInt32(),
+                fname = "Mem",
+                mnames = (string?)null,
+                lname = "Ber",
+                sex = false,
+                dob = (DateOnly?)null,
+                birthplace = (string?)null,
+                dod = (DateOnly?)null,
+                deathplace = (string?)null,
+                death_cause = (string?)null,
+                ethnicity = (string?)null,
+                biography = (string?)null
+            })
+        )!;
+
+        MutableChildren = new List<PutChildrenRequest>();
+        MutableEducations = new List<PutEducationRequest>();
+        MutableEmails = new List<PutEmailsRequest>();
+        MutableHobbies = new List<PutHobbiesRequest>();
+        MutablePhones = new List<PutPhonesRequest>();
+        MutableResidences = new List<PutResidencesRequest>();
+        MutableSpouses = new List<PutSpousesRequest>();
+        MutableWorks = new List<PutWorkRequest>();
+
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
+    }
+
+    [Test, Order(10)]
+    public async Task PosGetMembers2()
+    {
+        // Make request
+        HttpResponseMessage Response = await HttpService.GetAsync(
+            URI + TreesSubDir + MembersSubDir,
+            Parameter: $"{MemberInfo["id"].GetInt32()!}",
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
