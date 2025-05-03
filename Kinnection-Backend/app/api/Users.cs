@@ -210,7 +210,7 @@ static class UserAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate
-                var (_, UserID) = Authenticator.Authenticate(Context);
+                var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // Find the user to delete
                 var UserToDelete = Context.Users
