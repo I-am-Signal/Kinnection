@@ -229,6 +229,24 @@ public class TreesTest
         TestRunner.SaveTokens(Response.Headers);
     }
 
+    [Test, Order(6)]
+    public async Task PosGetIndividualTrees2()
+    {
+        // Make request
+        HttpResponseMessage Response = await HttpService.GetAsync(
+            URI + TreesSubDir,
+            Parameter: $"{TreeInfo["id"].GetInt32()!}",
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+        TestRunner.SaveTokens(Response.Headers);
+    }
+
     [OneTimeTearDown]
     public async Task TearDown()
     {

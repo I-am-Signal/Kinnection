@@ -193,10 +193,12 @@ public class UsersTest
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+        // No tokens to save
 
-        // Verify and save tokens
-        TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
+        // Ensure user no longer exists
+        using var Context = DatabaseManager.GetActiveContext();
+        var Exists = Context.Users.FirstOrDefault(u => u.ID == UserInfo["id"].GetInt32());
+        Assert.That(Exists, Is.Null);
     }
 
     [OneTimeTearDown]
