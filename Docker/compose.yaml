@@ -64,6 +64,7 @@ services:
       FROM_EMAIL: ${FROM_EMAIL}
       FROM_NAME: ${FROM_NAME}
       ASP_PORT: ${ASP_PORT}
+      ENC_KEY_DUR: ${ENC_KEY_DUR}
     depends_on:
       - mysql
 
