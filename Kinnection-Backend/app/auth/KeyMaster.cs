@@ -32,9 +32,11 @@ public static class KeyMaster
             byte[] decryptedData = rsa.Decrypt(Convert.FromBase64String(EncryptedText), RSAEncryptionPadding.OaepSHA256);
             return Encoding.UTF8.GetString(decryptedData);
         }
-        catch (FormatException f) { 
+        catch (FormatException f)
+        {
             Console.WriteLine(f);
-            throw new ArgumentException(); }
+            throw new ArgumentException();
+        }
     }
 
     /// <summary>
@@ -52,7 +54,7 @@ public static class KeyMaster
     }
 
     /// <summary>
-    /// Returns a Keys record.
+    /// Gets the current active encryption keys.
     /// </summary>
     /// <param name="Context"></param>
     /// <returns>Keys record instance</returns>
@@ -61,12 +63,23 @@ public static class KeyMaster
         // Try getting the keys from the environment
         var Keys = new Keys
         (
-            Environment.GetEnvironmentVariable("public")!,
-            Environment.GetEnvironmentVariable("private")!
+            Environment.GetEnvironmentVariable("PUBLIC")!,
+            Environment.GetEnvironmentVariable("PRIVATE")!
         );
 
-        if (string.IsNullOrEmpty(Keys.Public) || string.IsNullOrEmpty(Keys.Private))
+        int ExpDuration = Convert.ToInt32(
+            Environment.GetEnvironmentVariable("ENC_KEY_DUR") ?? "30");
+
+        DateTime Creation = DateTime.Parse(
+            Environment.GetEnvironmentVariable("KEY_CREATION")! ?? "01/01/2000");
+        DateTime Expiration = Creation.AddDays(ExpDuration);
+
+        if (
+            string.IsNullOrEmpty(Keys.Public) ||
+            string.IsNullOrEmpty(Keys.Private) ||
+            Expiration <= DateTime.UtcNow)
         {
+
             // Keys need to be obtained from the DB
             using var Context = DatabaseManager.GetActiveContext();
             try
@@ -75,6 +88,10 @@ public static class KeyMaster
                     .OrderByDescending(e => e.Created)
                     .First();
 
+                Creation = EncryptionKeys.Created;
+                Expiration = Creation.AddDays(ExpDuration);
+                if (Expiration <= DateTime.UtcNow) throw new Exception();
+
                 // Keys have been created
                 Keys = new Keys
                 (
@@ -82,7 +99,7 @@ public static class KeyMaster
                     EncryptionKeys.Private
                 );
             }
-            catch (Exception)
+            catch
             {
                 // Keys not created, create them
                 using RSA rsa = RSA.Create(2048);
@@ -92,19 +109,24 @@ public static class KeyMaster
                     Convert.ToBase64String(rsa.ExportPkcs8PrivateKey())
                 );
 
-                Context.Add(new Encryption
+                var EncKeys = new Encryption
                 {
                     Created = DateTime.UtcNow,
                     Public = Keys.Public,
                     Private = Keys.Private
-                });
+                };
+
+                Context.EncryptionKeys.Add(EncKeys);
                 Context.SaveChanges();
                 Console.WriteLine("New encryption keys have been created.");
+                
+                Creation = EncKeys.Created;
             }
 
             // Keys have been obtained, save them
-            Environment.SetEnvironmentVariable("public", Keys.Public);
-            Environment.SetEnvironmentVariable("private", Keys.Private);
+            Environment.SetEnvironmentVariable("PUBLIC", Keys.Public);
+            Environment.SetEnvironmentVariable("PRIVATE", Keys.Private);
+            Environment.SetEnvironmentVariable("KEY_CREATION", Creation.ToShortTimeString());
         }
 
         return Keys;
