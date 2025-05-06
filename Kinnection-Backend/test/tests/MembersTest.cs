@@ -1061,8 +1061,6 @@ public class MembersTest
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
 
-        // Verify and save tokens
-        TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
+        // No tokens to save on successful account deletion
     }
 }

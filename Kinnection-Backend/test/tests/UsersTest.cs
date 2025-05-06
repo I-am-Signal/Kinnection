@@ -193,7 +193,8 @@ public class UsersTest
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
-        // No tokens to save
+
+        // No tokens to save on successful account deletion
 
         // Ensure user no longer exists
         using var Context = DatabaseManager.GetActiveContext();

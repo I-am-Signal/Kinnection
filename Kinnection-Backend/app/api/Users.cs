@@ -221,6 +221,10 @@ static class UserAPIs
                 Context.Users.Remove(UserToDelete);
                 Context.SaveChanges();
 
+                // No tokens needed on successful account deletion
+                httpContext.Response.Headers.Authorization = "";
+                httpContext.Response.Headers["X-Refresh-Token"] = "";
+
                 // Return a 204 No Content response
                 return Results.NoContent();
             }
