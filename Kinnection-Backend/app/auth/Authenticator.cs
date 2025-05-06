@@ -77,6 +77,7 @@ public static class Authenticator
             Auth.Authorization = GenerateRandomString(64);
             Auth.Refresh = GenerateRandomString(64);
             Auth.PrevRef = GenerateRandomString(64);
+            Context.SaveChanges();
             throw new AuthenticationException("Access denied.");
         }
 
@@ -144,8 +145,13 @@ public static class Authenticator
     /// <param name="String1"></param>
     /// <param name="String2"></param>
     /// <returns></returns>
-    public static bool IsEqual(string String1, string String2)
+    public static bool IsEqual(string? String1, string? String2)
     {
+        if (String1 == null && String2 == null)
+            return true;
+        else if (String1 == null || String2 == null)
+            return false;
+
         return CryptographicOperations.FixedTimeEquals(
             Encoding.UTF8.GetBytes(String1),
             Encoding.UTF8.GetBytes(String2));
@@ -217,7 +223,7 @@ public static class Authenticator
         Context.SaveChanges();
 
         // Change to route used in frontend
-        return Base64UrlEncoder.Encode(SignedToken);;
+        return Base64UrlEncoder.Encode(SignedToken);
     }
 
     /// <summary>
@@ -402,8 +408,6 @@ public static class Authenticator
     {
         try
         {
-            var Keys = KeyMaster.GetKeys();
-
             string[] TokenParts = Token.Split('.');
             if (TokenParts.Length != 3)
                 throw new AuthenticationException("Invalid token provided.");
@@ -412,7 +416,8 @@ public static class Authenticator
             byte[] DecodedSignature = Base64UrlEncoder.DecodeBytes(TokenParts[2]);
 
             using RSA rsa = RSA.Create();
-            rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(Keys.Public), out _);
+            rsa.ImportSubjectPublicKeyInfo(
+                Convert.FromBase64String(KeyMaster.GetKeys().Public), out _);
 
             return rsa.VerifyData(
                 EncodedMessage,
