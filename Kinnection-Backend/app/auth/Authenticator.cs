@@ -219,7 +219,7 @@ public static class Authenticator
                 res = true // specific reset attribute to differentiate tokens
             }));
 
-        CurrAuth.Refresh = SignedToken.Split(".")[2];
+        CurrAuth.Refresh = SignedToken;
         Context.SaveChanges();
 
         // Change to route used in frontend

@@ -15,51 +15,44 @@ static class AuthAPIs
 
                 // Ensure user exists
                 var ExistingUser = Context.Users
-                    .FirstOrDefault(b => b.Email == Request.Email) ??
-                        throw new KeyNotFoundException(
-                            $"A user with email {Request.Email} does not exist.");
+                    .FirstOrDefault(b => b.Email == Request.Email);
+                if (ExistingUser == null)
+                    return Results.Problem(
+                        statusCode: 404,
+                        detail: $"A user with email {Request.Email} does not exist."
+                    );
 
                 // Ensure user's password exists
                 var ExistingPass = Context.Passwords
                     .OrderByDescending(p => p.Created)
-                    .FirstOrDefault(p => p.User.ID == ExistingUser!.ID) ??
-                        throw new ApplicationException(
-                            $"User {ExistingUser.ID} exists, but no associated password object also exists. Please contact support.");
+                    .FirstOrDefault(p => p.User.ID == ExistingUser!.ID);
+                if (ExistingPass == null)
+                    return Results.Problem(
+                        statusCode: 500,
+                        detail: $"User {ExistingUser.ID} exists, but no associated password object also exists. Please contact support."
+                    );
 
                 // Check password is correct
-                bool ValidPass = PassForge.IsPassCorrect(
+                bool PassIsValid = PassForge.IsPassCorrect(
                     KeyMaster.Decrypt(Request.Password), ExistingUser.ID);
 
-                if (!ValidPass)
-                {
-                    throw new InvalidCredentialException(
-                        "The email/password combination used is invalid.");
-                }
+                if (!PassIsValid)
+                    return Results.Problem(
+                        statusCode: 401,
+                        detail: "The email/password combination used is invalid."
+                    );                
 
                 // Compile Response
                 Authenticator.Provision(ExistingUser.ID, httpContext);
                 return Results.NoContent();
-            }
-            catch (InvalidCredentialException c)
-            {
-                Console.WriteLine($"Issue with POST /auth/login/: {c}");
-                return Results.Problem(
-                    detail: c.Message,
-                    statusCode: 401);
             }
             catch (KeyNotFoundException k)
             {
                 Console.WriteLine($"Issue with POST /auth/login/: {k}");
                 return Results.Problem(
                     detail: k.Message,
-                    statusCode: 404);
-            }
-            catch (ApplicationException a)
-            {
-                Console.WriteLine($"Issue with POST /auth/login/: {a}");
-                return Results.Problem(
-                    detail: a.Message,
-                    statusCode: 500);
+                    statusCode: 404
+                );
             }
             catch (Exception e)
             {
@@ -71,7 +64,6 @@ static class AuthAPIs
         .WithName("PostLogin")
         .WithOpenApi();
 
-
         app.MapPost("/auth/logout/", (HttpContext httpContext) =>
         {
             try
@@ -79,12 +71,11 @@ static class AuthAPIs
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate User
-                var Tokens = new Dictionary<string, string>()
-                {
-                    ["access"] = httpContext.Request.Headers.Authorization!,
-                    ["refresh"] = httpContext.Request.Headers["X-Refresh-Token"]!
-                };
-                Authenticator.Authenticate(Context, Tokens: Tokens);
+                Authenticator.Authenticate(Context, httpContext: httpContext);
+
+                // No tokens needed on successful logout
+                httpContext.Response.Headers.Authorization = "";
+                httpContext.Response.Headers["X-Refresh-Token"] = "";
 
                 return Results.NoContent();
             }
@@ -182,7 +173,16 @@ If the above link did not work, please copy and paste the following link into yo
                     throw new AuthenticationException(
                         "Password reset was denied. Please contact support.");
 
-                if (UserAuth.Refresh != ProcessedToken["signature"]["signature"].GetString())
+                // Get signature for comparison
+                var Token = UserAuth.Refresh.Split('.');
+                if (Token.Length != 3)
+                    return Results.Problem(
+                        statusCode: 401,
+                        detail: "The provided reset token is invalid."
+                    );
+                string SavedSignature = Token[2];
+
+                if (SavedSignature != ProcessedToken["signature"]["signature"].GetString())
                     throw new AuthenticationException("Invalid Reset Token");
 
                 if (Authenticator.IsExpired(
