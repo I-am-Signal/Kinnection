@@ -56,7 +56,7 @@ public static class HttpService
 
     public static async Task<HttpResponseMessage> PostAsync(
         string URI,
-        Dictionary<string, JsonElement> Content,
+        Dictionary<string, JsonElement>? Content,
         string ContentType = "application/json",
         string Parameter = "",
         Dictionary<string, string>? Arguments = null,
@@ -74,7 +74,7 @@ public static class HttpService
 
     public static async Task<HttpResponseMessage> PutAsync(
         string URI,
-        Dictionary<string, JsonElement> Content,
+        Dictionary<string, JsonElement>? Content,
         string ContentType = "application/json",
         string Parameter = "",
         Dictionary<string, string>? Arguments = null,
