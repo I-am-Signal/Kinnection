@@ -31,5 +31,6 @@ namespace Kinnection
         public required string Authorization { get; set; }
         public required string Refresh { get; set; }
         public required string PrevRef { get; set; }
+        public required string Reset { get; set; }
     }
 }

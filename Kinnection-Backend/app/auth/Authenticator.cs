@@ -216,10 +216,10 @@ public static class Authenticator
                 sub = CurrAuth.User.ID,
                 exp = ExpiresAt,
                 iat = IssuedAt,
-                res = true // specific reset attribute to differentiate tokens
+                aud = new List<string> { "/auth/pass/reset/" }
             }));
 
-        CurrAuth.Refresh = SignedToken;
+        CurrAuth.Reset = SignedToken;
         Context.SaveChanges();
 
         // Change to route used in frontend
@@ -350,7 +350,8 @@ public static class Authenticator
                 User = ExistingUser,
                 Authorization = AccessHash,
                 Refresh = RefreshHash,
-                PrevRef = ""
+                PrevRef = "",
+                Reset = GenerateRandomString()
             };
             Context.Add(Auth);
         }

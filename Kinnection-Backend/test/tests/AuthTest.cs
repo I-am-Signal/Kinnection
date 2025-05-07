@@ -18,7 +18,7 @@ public class AuthTest
         @$"{{
             ""fname"": ""AuthFirst"",
             ""lname"": ""AuthLast"",
-            ""email"": ""AuthEmail@mail.com"",
+            ""email"": ""{Environment.GetEnvironmentVariable("MANUAL_EMAIL_VERIFICATION")}"",
             ""password"": ""{JsonSerializer.SerializeToElement(
                 KeyMaster.Encrypt("TestPassword"))}""
         }}")!;
@@ -143,6 +143,9 @@ public class AuthTest
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 
+        // Verify existing tokens are not invalidated by reset request
+        await PosPostVerify();
+
         // Make request to reset
         UserInfo["password"] = JsonSerializer.SerializeToElement(
                 KeyMaster.Encrypt("TestPassword2"));
@@ -158,7 +161,7 @@ public class AuthTest
 
         var Headers = new Dictionary<string, string>
         {
-            ["X-Reset-Token"] = Base64UrlEncoder.Encode(UserAuth.Refresh)
+            ["X-Reset-Token"] = Base64UrlEncoder.Encode(UserAuth.Reset)
         };
 
         Console.WriteLine(Headers["X-Reset-Token"]);
@@ -171,6 +174,16 @@ public class AuthTest
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Make request to verify tokens are invalidated
+        Response = await HttpService.PostAsync(
+            URI + AuthSubDir + "verify/",
+            null!,
+            Headers: TestRunner.GetHeaders()
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
 
         // Make request to login again with new credentials
         RequestContent = new Dictionary<string, JsonElement>()

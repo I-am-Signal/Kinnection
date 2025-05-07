@@ -165,16 +165,20 @@ If the above link did not work, please copy and paste the following link into yo
                     .Include(a => a.User)
                     .First(a => a.User.ID == ProcessedToken["payload"]["sub"].GetInt32());
 
-                if (!ProcessedToken["payload"].TryGetValue("res", out var Reset))
+                if (!ProcessedToken["payload"].TryGetValue("aud", out var Audience))
                     throw new AuthenticationException(
                         "Invalid Reset Token");
 
-                if (!Reset.GetBoolean())
+                bool FoundInAud = Audience.EnumerateArray()
+                    .Any(a => a.ValueKind == System.Text.Json.JsonValueKind.String &&
+                        a.GetString() == "/auth/pass/reset/");
+
+                if (!FoundInAud)
                     throw new AuthenticationException(
                         "Password reset was denied. Please contact support.");
 
                 // Get signature for comparison
-                var Token = UserAuth.Refresh.Split('.');
+                var Token = UserAuth.Reset.Split('.');
                 if (Token.Length != 3)
                     return Results.Problem(
                         statusCode: 401,
@@ -218,8 +222,11 @@ If the above link did not work, please copy and paste the following link into yo
                 };
                 Context.Passwords.Add(NewPass);
 
-                // Clear token
+                // Invalidate current auth tokens
+                UserAuth.Authorization = Authenticator.GenerateRandomString();
+                UserAuth.PrevRef = UserAuth.Refresh;
                 UserAuth.Refresh = Authenticator.GenerateRandomString();
+                UserAuth.Reset = Authenticator.GenerateRandomString();
 
                 Context.SaveChanges();
 
