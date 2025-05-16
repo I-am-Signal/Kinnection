@@ -1,0 +1,25 @@
+footer {
+  display: flex;
+  background-color: rgba(255, 255, 255, 0.75);
+  color: black;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+}
+
+a {
+  &:link {
+    color: black;
+  }
+  &:visited {
+    color: #333;
+  }
+  &:hover {
+    color: #555;
+  }
+  &:active {
+    color: #999;
+  }
+}

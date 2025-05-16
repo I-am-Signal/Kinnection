@@ -1,0 +1,47 @@
+header {
+  display: flex;
+  padding-inline: 16px;
+  padding-block: 8px;
+  background-color: white;
+  color: black;
+  align-items: center;
+  justify-content: center;
+}
+
+nav {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  span {
+    font-size: 1.25rem;
+  }
+  span:hover {
+    color: grey;
+    cursor: pointer;
+  }
+
+  .logo {
+    width: 3em;
+    border-radius: 100%;
+    padding: 0.1rem;
+    box-shadow: 0 0 1rem #ccc;
+    &:hover {
+      box-shadow: 0 0 1rem #888;
+    }
+  }
+  ul {
+    display: flex;
+    list-style: none;
+
+    li {
+      padding-right: 2em;
+    }
+
+    li:hover {
+      color: grey;
+      cursor: pointer;
+    }
+  }
+}

@@ -1,0 +1,50 @@
+section {
+  width: 91.94rem;
+}
+
+.bgrd-container {
+  display: flex;
+  justify-content: center;
+}
+
+img {
+  position: absolute;
+  width: 100rem;
+  overflow: hidden;
+  max-height: 100rem;
+  max-height: 40.22rem;
+  object-fit: cover;
+  margin: auto;
+}
+
+.landing {
+  position: relative;
+}
+
+div.get_started_container {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 1em;
+  border-width: 0;
+  width: 20em;
+  position: absolute;
+  bottom: -30rem;
+  left: 5rem;
+  z-index: 1;
+  padding: 1em;
+  box-shadow: 0 0 0.5rem white;
+  text-align: center;
+}
+
+button {
+  border-width: 2px;
+  border-radius: 0.75em;
+  border-width: 0;
+  margin: 1em;
+  padding: 1em;
+  box-shadow: 0 0 0.25rem grey;
+
+  &:hover {
+    background-color: lightgray;
+    box-shadow: 0 0 0.25rem black;
+  }
+}
