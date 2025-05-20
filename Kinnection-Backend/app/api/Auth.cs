@@ -255,6 +255,7 @@ If the above link did not work, please copy and paste the following link into yo
                 var Keys = KeyMaster.GetKeys();
 
                 httpContext.Response.Headers["X-Public"] = Keys.Public;
+                httpContext.Response.Headers["Access-Control-Expose-Headers"] = "X-Public";
                 return Results.NoContent();
             }
             catch (Exception e)

@@ -11,8 +11,8 @@ public static class Authenticator
 {
     private static readonly string EncodedHeader = Base64UrlEncoder.Encode(
         "{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
-    private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER") +
-        ':' + Environment.GetEnvironmentVariable("ASP_PORT");
+    private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER")!;
+    private static readonly string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!;
 
     /// <summary>
     /// Authenticates access and refresh tokens. 
@@ -127,6 +127,7 @@ public static class Authenticator
         {
             httpContext.Response.Headers.Authorization = $"Bearer {AccessToken}";
             httpContext.Response.Headers["X-Refresh-Token"] = RefreshToken;
+            httpContext.Response.Headers["Access-Control-Expose-Headers"] = "Authorization, X-Refresh-Token";
         }
 
         return (
@@ -185,7 +186,7 @@ public static class Authenticator
         return JsonSerializer.Serialize(
             new
             {
-                iss = ISSUER,
+                iss = $"{ISSUER}:{ASP_PORT}",
                 sub = UserID,
                 exp = ExpiresAt,
                 iat = IssuedAt
@@ -212,7 +213,7 @@ public static class Authenticator
         var SignedToken = SignToken(JsonSerializer.Serialize(
             new
             {
-                iss = ISSUER,
+                iss = $"{ISSUER}:{ASP_PORT}",
                 sub = CurrAuth.User.ID,
                 exp = ExpiresAt,
                 iat = IssuedAt,
@@ -242,7 +243,7 @@ public static class Authenticator
         return JsonSerializer.Serialize(
             new
             {
-                iss = ISSUER,
+                iss = $"{ISSUER}:{ASP_PORT}",
                 sub = UserID,
                 exp = ExpiresAt,
                 iat = IssuedAt,
@@ -367,6 +368,7 @@ public static class Authenticator
         {
             httpContext.Response.Headers.Authorization = $"Bearer {AccessToken}";
             httpContext.Response.Headers["X-Refresh-Token"] = RefreshToken;
+            httpContext.Response.Headers["Access-Control-Expose-Headers"] = "Authorization, X-Refresh-Token";
         }
 
         return new Dictionary<string, string>

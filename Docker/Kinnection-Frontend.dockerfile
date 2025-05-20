@@ -1,4 +1,4 @@
-FROM node:20 AS build
+FROM node:23.11.1-alpine AS build
 WORKDIR /app
 
 # Copy dependency definitions and install dependencies
@@ -20,7 +20,8 @@ COPY --from=build /app/dist/kinnection-frontend/browser /usr/share/nginx/html
 # Copy NGINX config file
 COPY Docker/nginx.conf /etc/nginx/templates/default.conf.template
 
-# Set environment variables and substitute them in the config file
-# Expose the port and start the app
+# Expose the port
 EXPOSE ${ANG_CONTAINER_PORT}
+
+# Set environment variables by substituting them in the config file and start the app
 CMD envsubst '${ANG_CONTAINER_PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'

@@ -2,24 +2,51 @@ using Kinnection;
 using Microsoft.EntityFrameworkCore;
 class Program
 {
-  static void Main(string[] args)
+  static void Main()
   {
     // Connect to the DB
     using var Context = DatabaseManager.GetActiveContext();
 
     // Build API
-    var builder = WebApplication.CreateBuilder(args);
+    var builder = WebApplication.CreateBuilder();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddDbContext<KinnectionContext>(options =>
       options.UseMySQL(DatabaseManager.DBURL));
 
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddCors(options =>
+    {
+      options.AddPolicy("AllowFrontend", policy =>
+      {
+        var ANG_PORT = Environment.GetEnvironmentVariable("ANG_PORT");
+        var ISSUER = Environment.GetEnvironmentVariable("ISSUER");
+        if (string.IsNullOrWhiteSpace(ANG_PORT) ||
+          string.IsNullOrWhiteSpace(ISSUER))
+          throw new Exception("Missing value for an Angular environment variable!");
+
+        if (builder.Environment.IsDevelopment())
+        {
+          policy.WithOrigins("*");
+        }
+        else
+        {
+          policy.WithOrigins($"{ISSUER}:{ANG_PORT}")
+            .AllowCredentials();
+        }
+
+        policy.AllowAnyHeader()
+          .AllowAnyMethod();
+      });
+    });
 
     if (builder.Environment.IsDevelopment())
+    {
+      builder.Services.AddSwaggerGen();
       builder.Logging.AddConsole();
+    }
 
     var app = builder.Build();
 
+    app.UseCors("AllowFrontend");
     if (app.Environment.IsDevelopment())
     {
       app.UseSwagger();
