@@ -34,8 +34,9 @@ while IFS='=' read -r envName envValue; do
 
     # Export even if envValue is empty
     if [[ "$envName" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-        export "$envName=$envValue"
+        export "$envName"="$envValue"
     fi
+
 done < "$envFile"
 
 # Remove the internal host var so the external var is used
