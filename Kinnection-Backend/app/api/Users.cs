@@ -236,11 +236,11 @@ static class UserAPIs
                     statusCode: 401
                 );
             }
-            catch (InvalidOperationException i)
+            catch (Exception e) when (e is InvalidOperationException || e is KeyNotFoundException)
             {
-                Console.WriteLine($"Issue with DELETE /users/{{id}}: {i}");
+                Console.WriteLine($"Issue with DELETE /users/{{id}}: {e}");
                 return Results.Problem(
-                    detail: i.Message,
+                    detail: e.Message,
                     statusCode: 404
                 );
             }

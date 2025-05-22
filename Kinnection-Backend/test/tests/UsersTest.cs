@@ -46,7 +46,6 @@ public class UsersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
@@ -92,7 +91,6 @@ public class UsersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected output
         RequestContent["id"] = JsonSerializer.SerializeToElement<int?>(null);
@@ -120,7 +118,6 @@ public class UsersTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected output
         var Expected = JsonSerializer.SerializeToElement(
@@ -144,9 +141,10 @@ public class UsersTest
     {
         // Ensure unauthorized access is prevented
         // Make request with invalid tokens
-        var Header = TestRunner.GetHeaders();
-        Header["Authorization"] = Header["Authorization"] + "1";
-        Header["X-Refresh-Token"] = Header["X-Refresh-Token"] + "1";
+        var Header = TestRunner.GetHeaders(Decomposed: true);
+
+        Header["Authorization"] = $"{Header["Authorization"]}asdfasdf";
+        Header["X-Refresh-Token"] = $"{Header["X-Refresh-Token"]}asdfasdf";
 
         var Response = await HttpService.DeleteAsync(
             URI + UserSubDir,
@@ -178,7 +176,6 @@ public class UsersTest
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
 
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
     [Test, Order(5)]

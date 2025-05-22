@@ -5,21 +5,32 @@ namespace test;
 
 public static class HttpService
 {
-    private static readonly HttpClient _client = new HttpClient();
+    private static readonly HttpClient _client = new HttpClient(
+        new HttpClientHandler { UseCookies = false });
 
+    /// <summary>
+    /// Adds the headers from the dictionary to the HttpRequestMessage.
+    /// </summary>
+    /// <param name="Request"></param>
+    /// <param name="Headers"></param>
+    /// <returns>The HttpRequestMessage instanced passed in with the attached headers.</returns>
     private static HttpRequestMessage AddHeaders(
         HttpRequestMessage Request,
         Dictionary<string, string>? Headers)
     {
         if (Headers != null)
-        {
             foreach (var header in Headers)
                 Request.Headers.Add(header.Key, header.Value);
-        }
 
         return Request;
     }
 
+    /// <summary>
+    /// Appends the arguments to the URI.
+    /// </summary>
+    /// <param name="URI"></param>
+    /// <param name="Arguments"></param>
+    /// <returns>The URI passed in with the arguments appended.</returns>
     private static string AppendArguments(
         string URI,
         Dictionary<string, string>? Arguments)
@@ -40,6 +51,14 @@ public static class HttpService
         return URL.ToString();
     }
 
+    /// <summary>
+    /// Creates a GET HTTP call at the requested URI.
+    /// </summary>
+    /// <param name="URI"></param>
+    /// <param name="Parameter"></param>
+    /// <param name="Arguments"></param>
+    /// <param name="Headers"></param>
+    /// <returns>The response from the GET HTTP call.</returns>
     public static async Task<HttpResponseMessage> GetAsync(
         string URI,
         string Parameter = "",
@@ -54,6 +73,16 @@ public static class HttpService
         return await _client.SendAsync(Request);
     }
 
+    /// <summary>
+    /// Creates a POST HTTP call at the requested URI.
+    /// </summary>
+    /// <param name="URI"></param>
+    /// <param name="Content"></param>
+    /// <param name="ContentType"></param>
+    /// <param name="Parameter"></param>
+    /// <param name="Arguments"></param>
+    /// <param name="Headers"></param>
+    /// <returns>The response from the POST HTTP call.</returns>
     public static async Task<HttpResponseMessage> PostAsync(
         string URI,
         Dictionary<string, JsonElement>? Content,
@@ -72,6 +101,16 @@ public static class HttpService
         return await _client.SendAsync(Request);
     }
 
+    /// <summary>
+    /// Creates a PUT HTTP call at the requested URI.
+    /// </summary>
+    /// <param name="URI"></param>
+    /// <param name="Content"></param>
+    /// <param name="ContentType"></param>
+    /// <param name="Parameter"></param>
+    /// <param name="Arguments"></param>
+    /// <param name="Headers"></param>
+    /// <returns>The response from the PUT HTTP call.</returns>
     public static async Task<HttpResponseMessage> PutAsync(
         string URI,
         Dictionary<string, JsonElement>? Content,
@@ -90,6 +129,14 @@ public static class HttpService
         return await _client.SendAsync(Request);
     }
 
+    /// <summary>
+    /// Creates a DELETE HTTP call at the requested URI.
+    /// </summary>
+    /// <param name="URI"></param>
+    /// <param name="Parameter"></param>
+    /// <param name="Arguments"></param>
+    /// <param name="Headers"></param>
+    /// <returns>The response from the DELETE HTTP call.</returns>
     public static async Task<HttpResponseMessage> DeleteAsync(
         string URI,
         string Parameter = "",

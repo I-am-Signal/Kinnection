@@ -35,7 +35,6 @@ public class AuthenticatorTest
     {
         var Tokens = Authenticator.Provision(AuthUser.ID);
         TestRunner.CheckTokens(Tokens: Tokens);
-        TestRunner.SaveTokens(Tokens: Tokens);
     }
 
     [Test, Order(2)]
@@ -47,12 +46,10 @@ public class AuthenticatorTest
 
         var (Tokens, _) = Authenticator.Authenticate(Context!, Tokens: TestRunner.GetTokens());
         TestRunner.CheckTokens(Tokens: Tokens);
-        TestRunner.SaveTokens(Tokens: Tokens);
 
         // Repeat to check for issues in processing
         (Tokens, _)= Authenticator.Authenticate(Context!, Tokens: Tokens);
         TestRunner.CheckTokens(Tokens: Tokens);
-        TestRunner.SaveTokens(Tokens: Tokens);
     }
 
     [Test, Order(3)]

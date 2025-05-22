@@ -40,7 +40,6 @@ public class AuthTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Evaluate content
         var Output = JsonSerializer.Deserialize<JsonElement>(
@@ -103,7 +102,6 @@ public class AuthTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
     [Test, Order(3)]
@@ -122,7 +120,6 @@ public class AuthTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
     [Test, Order(4)]
@@ -203,85 +200,45 @@ public class AuthTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
-    // [Test, Order(3)]
-    // public async Task PosGetUsers()
-    // {
-    //     // Make request
-    //     HttpResponseMessage Response = await HttpService.GetAsync(
-    //         URI + UserSubDir,
-    //         Parameter: $"{UserInfo["id"].GetInt32()!}",
-    //         Headers: TestRunner.GetHeaders()
-    //     );
+    [Test, Order(5)]
+    public async Task NegPostVerify()
+    {
+        // Make request
+        var ValidHeader = TestRunner.GetHeaders();
+        var SplitCookie = ValidHeader["Cookie"].Split("; ");
 
-    //     // Ensure expected status code
-    //     Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        string[] Access = new string[2];
+        string Refresh = string.Empty;
+        foreach (var Cookie in SplitCookie)
+        {
+            var WholeCookie = Cookie.Split("=");
+            string CookieKey = WholeCookie[0];
+            string CookieContent = WholeCookie[1];
+            if ("Authorization" == CookieKey)
+            {
+                Console.WriteLine(CookieContent);
+                Access = CookieContent.Split("%20");
+            }
+            else if ("X-Refresh-Token" == CookieKey) Refresh = CookieContent;
+        }
 
-    //     // Verify and save tokens
-    //     TestRunner.CheckTokens(Response.Headers);
-    //     TestRunner.SaveTokens(Response.Headers);
+        var Header = new Dictionary<string, string>
+        {
+            ["Cookie"] = $"Authorization={Access[0]}asdfasdf{Access[1]}; X-Refresh-Token=asdfasdf{Refresh}"
+        };
 
-    //     // Build expected output
-    //     var Expected = JsonSerializer.SerializeToElement(
-    //         new Dictionary<string, JsonElement>
-    //         {
-    //             ["id"] = UserInfo["id"],
-    //             ["fname"] = UserInfo["fname"],
-    //             ["lname"] = UserInfo["lname"],
-    //             ["email"] = UserInfo["email"]
-    //         }
-    //     );
+        HttpResponseMessage Response = await HttpService.PostAsync(
+            URI + AuthSubDir + "verify/",
+            null!,
+            Headers: Header
+        );
 
-    //     // Evaluate content
-    //     var Output = JsonSerializer.Deserialize<JsonElement>(
-    //         await Response.Content.ReadAsStringAsync());
-
-    //     TestRunner.EvaluateJsonElementObject(Output, Expected);
-    // }
-
-    // [Test, Order(4)]
-    // public async Task NegDeleteUsers()
-    // {
-    //     // Ensure unauthorized access is prevented
-    //     // Make request with invalid tokens
-    //     var Header = TestRunner.GetHeaders();
-    //     Header["Authorization"] = Header["Authorization"] + "1";
-    //     Header["X-Refresh-Token"] = Header["X-Refresh-Token"] + "1";
-
-    //     var Response = await HttpService.DeleteAsync(
-    //         URI + UserSubDir,
-    //         Parameter: UserInfo["id"].GetInt32().ToString(),
-    //         Headers: Header
-    //     );
-
-    //     Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    //     // No tokens to save from headers, exception occurred in authentication
-
-    //     // Make request with empty tokens
-    //     Response = await HttpService.DeleteAsync(
-    //         URI + UserSubDir,
-    //         Parameter: UserInfo["id"].GetInt32().ToString()
-    //     );
-
-    //     // Ensure expected status code
-    //     Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
-    //     // No tokens to save from headers, exception occurred in authentication
-
-    //     // Expect Not Found when user does not exist
-    //     // Delete non-existent user
-    //     Response = await HttpService.DeleteAsync(
-    //         URI + UserSubDir,
-    //         Parameter: "0",
-    //         Headers: TestRunner.GetHeaders()
-    //     );
-
-    //     Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-
-    //     TestRunner.CheckTokens(Response.Headers);
-    //     TestRunner.SaveTokens(Response.Headers);
-    // }
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        // No tokens to save from headers, exception occurred in authentication
+    }
 
     [OneTimeTearDown]
     public async Task TearDown()

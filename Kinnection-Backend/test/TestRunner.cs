@@ -14,48 +14,58 @@ public static class TestRunner
 
     /// <summary>
     /// Verifies token validity. 
-    /// If 'AssertAccess' is true, asserts Access token is valid.
-    /// If 'AssertRefresh' is true, asserts Refresh token is valid.
+    /// If 'AssertValidAccess' is true, asserts Access token is valid.
+    /// If 'AssertValidRefresh' is true, asserts Refresh token is valid.
     /// </summary>
     /// <param name="Headers"></param>
-    /// <param name="AssertAccess"></param>
-    /// <param name="AssertRefresh"></param>
+    /// <param name="AssertValidAccess"></param>
+    /// <param name="AssertValidRefresh"></param>
     public static void CheckTokens(
         HttpResponseHeaders? Headers = null,
         Dictionary<string, string>? Tokens = null,
-        bool AssertAccess = true,
-        bool AssertRefresh = true)
+        bool AssertValidAccess = true,
+        bool AssertValidRefresh = true)
     {
-        string Access, Refresh;
+        string AccessToken = string.Empty, RefreshToken = string.Empty;
         if (Headers != null)
         {
-            // Account for the "Bearer XXXXXXX"
-            Access = Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
-            Refresh = Headers.GetValues("X-Refresh-Token").ElementAt(0);
+            var Cookies = Headers.GetValues("Set-Cookie");
+            foreach (var Cookie in Cookies)
+            {
+                var ParsedCookie = Cookie.Split("=");
+                string CookieName = ParsedCookie[0];
+                string CookieContent = ParsedCookie[1].Split("; ")[0];
+                if ("Authorization" == CookieName) AccessToken = CookieContent.Split("%20")[1];
+                else if ("X-Refresh-Token" == CookieName) RefreshToken = CookieContent;
+            }
         }
         else
         {
-            Access = Tokens!["access"];
-            Refresh = Tokens!["refresh"];
+            AccessToken = Tokens!["access"];
+            RefreshToken = Tokens!["refresh"];
         }
 
         // Ensure they are not empty
-        Assert.That(string.IsNullOrEmpty(Access), Is.False);
-        Assert.That(string.IsNullOrEmpty(Refresh), Is.False);
+        Assert.That(string.IsNullOrEmpty(AccessToken), Is.False);
+        Assert.That(string.IsNullOrEmpty(RefreshToken), Is.False);
 
-        bool IsAccessValid = Authenticator.VerifyToken(Access);
-        bool IsRefreshValid = Authenticator.VerifyToken(Refresh);
+        bool IsAccessValid = Authenticator.VerifyToken(AccessToken);
+        bool IsRefreshValid = Authenticator.VerifyToken(RefreshToken);
 
         // Check asserts
-        if (AssertAccess)
+        if (AssertValidAccess)
+        {
             Assert.That(IsAccessValid, Is.True);
-        else
-            Assert.That(IsAccessValid, Is.False);
+            Access = AccessToken;
+        }
+        else Assert.That(IsAccessValid, Is.False);
 
-        if (AssertRefresh)
+        if (AssertValidRefresh)
+        {
             Assert.That(IsRefreshValid, Is.True);
-        else
-            Assert.That(IsRefreshValid, Is.False);
+            Refresh = RefreshToken;
+        }
+        else Assert.That(IsRefreshValid, Is.False);
     }
 
     /// <summary>
@@ -63,22 +73,19 @@ public static class TestRunner
     /// </summary>
     /// <param name="Headers"></param>
     /// <returns>Dictionary with "Authorization" and "X-Refresh-Token" attributes</returns>
-    public static Dictionary<string, string> GetHeaders(Dictionary<string, string>? Headers = null)
+    public static Dictionary<string, string> GetHeaders(bool Decomposed = false)
     {
-        if (null == Headers)
-        {
-            Headers = new Dictionary<string, string>()
+        if (!Decomposed)
+            return new Dictionary<string, string>
             {
-                ["Authorization"] = $"Bearer {Access}",
+                ["Cookie"] = $"Authorization=Bearer%20{Access}; X-Refresh-Token={Refresh}"
+            };
+        else
+            return new Dictionary<string, string>
+            {
+                ["Authorization"] = Access,
                 ["X-Refresh-Token"] = Refresh
             };
-        }
-        else
-        {
-            Headers["Authorization"] = $"Bearer {Access}";
-            Headers["X-Refresh-Token"] = Refresh;
-        }
-        return Headers;
     }
 
     /// <summary>
@@ -126,13 +133,13 @@ public static class TestRunner
         {
             case JsonValueKind.String:
                 Assert.That(
-                    Object.GetString(), 
+                    Object.GetString(),
                     Is.EqualTo(Expected.GetString()),
                     $"Object: \"{Object.GetString()}\", Expected: \"{Expected.GetString()}\"");
                 break;
             case JsonValueKind.Number:
                 Assert.That(
-                    Object.GetInt32(), 
+                    Object.GetInt32(),
                     Is.EqualTo(Expected.GetInt32()),
                     $"Object: \"{Object.GetInt32()}\", Expected: \"{Expected.GetInt32()}\"");
                 break;
@@ -145,7 +152,7 @@ public static class TestRunner
                 break;
             case JsonValueKind.Null:
                 Assert.That(
-                    Expected.ValueKind, 
+                    Expected.ValueKind,
                     Is.EqualTo(JsonValueKind.Null),
                     $"Object: \"{Object.ValueKind}\", Expected: \"{Expected.ValueKind}\"");
                 break;
@@ -154,7 +161,7 @@ public static class TestRunner
                 var ExpArr = Expected.EnumerateArray();
 
                 Assert.That(
-                    ObjArr.Count(), 
+                    ObjArr.Count(),
                     Is.EqualTo(ExpArr.Count()),
                     $"Object: \"{ObjArr.Count()}\", Expected: \"{ExpArr.Count()}\"");
 
@@ -191,24 +198,5 @@ public static class TestRunner
             default:
                 throw new ArgumentException("ValueKind of JsonElement is not valid");
         }
-    }
-
-    public static void SaveTokens(
-        HttpResponseHeaders? Headers = null,
-        Dictionary<string, string>? Tokens = null)
-    {
-        if (Headers != null)
-        {
-            // Account for the "Bearer XXXXXXX"
-            Access = Headers.GetValues("Authorization").ElementAt(0).Split(" ")[1];
-            Refresh = Headers.GetValues("X-Refresh-Token").ElementAt(0);
-        }
-        else if (Tokens != null)
-        {
-            Access = Tokens!["access"];
-            Refresh = Tokens!["refresh"];
-        }
-        else
-            throw new Exception("Provide either a token dictionary or the headers!");
     }
 }

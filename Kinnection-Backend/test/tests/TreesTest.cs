@@ -48,7 +48,6 @@ public class TreesTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
@@ -86,7 +85,6 @@ public class TreesTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
@@ -131,7 +129,6 @@ public class TreesTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected output
         RequestContent["id"] = JsonSerializer.SerializeToElement<int?>(null);
@@ -158,7 +155,6 @@ public class TreesTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected output
         var Expected = JsonSerializer.SerializeToElement(
@@ -191,7 +187,6 @@ public class TreesTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected output
         var Expected = JsonSerializer.SerializeToElement(new
@@ -226,7 +221,6 @@ public class TreesTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
     [Test, Order(6)]
@@ -244,7 +238,6 @@ public class TreesTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
     [OneTimeTearDown]

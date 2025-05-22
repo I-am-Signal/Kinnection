@@ -120,7 +120,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
@@ -171,7 +170,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Verify location (expected type: int)
         Convert.ToInt32(Response.Headers.Location!.ToString());
@@ -215,7 +213,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Get ID
         MemberID2 = Convert.ToInt32(Response.Headers.Location!.ToString());
@@ -238,7 +235,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Get ID
         MemberID3 = Convert.ToInt32(Response.Headers.Location!.ToString());
@@ -276,7 +272,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected values
         RequestContent["id"] = MemberInfo["id"];
@@ -389,7 +384,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected values
         RequestContent["id"] = MemberInfo["id"];
@@ -582,7 +576,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected values
         RequestContent["id"] = MemberInfo["id"];
@@ -716,7 +709,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected values
         RequestContent["id"] = MemberInfo["id"];
@@ -851,7 +843,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected values
         RequestContent["id"] = MemberInfo["id"];
@@ -919,7 +910,6 @@ public class MembersTest
         // Evaluate Headers
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected values
         RequestContent["id"] = MemberInfo["id"];
@@ -948,7 +938,6 @@ public class MembersTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
 
         // Build expected values
         var Expected = JsonSerializer.SerializeToElement(
@@ -1026,7 +1015,6 @@ public class MembersTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
     [Test, Order(10)]
@@ -1044,7 +1032,6 @@ public class MembersTest
 
         // Verify and save tokens
         TestRunner.CheckTokens(Response.Headers);
-        TestRunner.SaveTokens(Response.Headers);
     }
 
     [OneTimeTearDown]

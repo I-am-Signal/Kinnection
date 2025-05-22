@@ -14,6 +14,63 @@ public static class Authenticator
     private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER")!;
     private static readonly string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!;
 
+    public static void AddHttpOnlyTokens(HttpContext httpContext, string Access, string Refresh)
+    {
+        string ENV = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")!;
+        string ACCESS_DURATION = Environment.GetEnvironmentVariable("ACCESS_DURATION")!;
+        string REFRESH_DURATION = Environment.GetEnvironmentVariable("REFRESH_DURATION")!;
+        if (string.IsNullOrWhiteSpace(ENV) || string.IsNullOrWhiteSpace(ACCESS_DURATION) || string.IsNullOrWhiteSpace(REFRESH_DURATION))
+            throw new Exception("Authentication token environment variables are missing!");
+
+        CookieOptions AccessOptions, RefreshOptions;
+
+        if (ENV == "Production")
+        {
+            AccessOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(
+                    Convert.ToInt32(ACCESS_DURATION)
+                )
+            };
+            RefreshOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddHours(
+                    Convert.ToInt32(REFRESH_DURATION)
+                )
+            };
+        }
+        else
+        {
+            AccessOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddHours(
+                    Convert.ToInt32(ACCESS_DURATION))
+            };
+            RefreshOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddHours(
+                    Convert.ToInt32(REFRESH_DURATION))
+            };
+        }
+
+        httpContext.Response.Cookies.Append(
+            "Authorization", $"Bearer {Access}", AccessOptions);
+        httpContext.Response.Cookies.Append(
+            "X-Refresh-Token", Refresh, RefreshOptions);
+    }
+
     /// <summary>
     /// Authenticates access and refresh tokens. 
     /// Places refreshed tokens into httpContext if it's provided.
@@ -34,24 +91,15 @@ public static class Authenticator
 
         string RawAccess, RawRefresh;
         // Process and verify tokens
-        if (httpContext != null)
-        {
-            var SplitAccess = httpContext.Request.Headers.Authorization!.ToString().Split(" ");
-            // Ensure RawAccess can be split
-            if (SplitAccess.Length != 2)
-                throw new AuthenticationException("Invalid token provided.");
-            RawAccess = SplitAccess[1];
-            RawRefresh = httpContext.Request.Headers["X-Refresh-Token"]!;
-        }
-        else if (Tokens != null)
-        {
-            RawAccess = Tokens["access"];
-            RawRefresh = Tokens["refresh"];
-        }
+        if (httpContext != null) (RawAccess, RawRefresh) = ProcessCookies(httpContext);
+        else if (Tokens != null) (RawAccess, RawRefresh) = (Tokens["access"], Tokens["refresh"]);
         else throw new AuthenticationException("No tokens provided for authentication!");
 
         var Access = ProcessToken(RawAccess);
+        ValidateTokenClaims(Access);
+
         var Refresh = ProcessToken(RawRefresh);
+        ValidateTokenClaims(Refresh);
 
         int UserID = Access["payload"]["sub"].GetInt32();
         int RefreshUserID = Refresh["payload"]["sub"].GetInt32();
@@ -61,12 +109,6 @@ public static class Authenticator
 
         var Auth = Context.Authentications.FirstOrDefault(b => b.User.ID == UserID)
             ?? throw new KeyNotFoundException($"User with ID {UserID} is not logged in.");
-
-        // Verify access token matches user
-        if (!IsEqual(
-            Access["signature"]["signature"].GetString()!,
-            Auth.Authorization)
-        ) throw new AuthenticationException("Access denied.");
 
         // Verify refresh token is not previous refresh token
         if (IsEqual(
@@ -80,6 +122,12 @@ public static class Authenticator
             Context.SaveChanges();
             throw new AuthenticationException("Access denied.");
         }
+
+        // Verify access token matches user
+        if (!IsEqual(
+            Access["signature"]["signature"].GetString()!,
+            Auth.Authorization)
+        ) throw new AuthenticationException("Access denied.");
 
         bool RefMatchesUser = IsEqual(
             Refresh["signature"]["signature"].GetString()!,
@@ -123,12 +171,7 @@ public static class Authenticator
 
         Context.SaveChanges();
 
-        if (httpContext != null)
-        {
-            httpContext.Response.Headers.Authorization = $"Bearer {AccessToken}";
-            httpContext.Response.Headers["X-Refresh-Token"] = RefreshToken;
-            httpContext.Response.Headers["Access-Control-Expose-Headers"] = "Authorization, X-Refresh-Token";
-        }
+        if (httpContext != null) AddHttpOnlyTokens(httpContext, AccessToken, RefreshToken);
 
         return (
             new Dictionary<string, string>
@@ -271,6 +314,34 @@ public static class Authenticator
     }
 
     /// <summary>
+    /// Processes the authentication tokens from the cookies in the request
+    /// </summary>
+    /// <param name="httpContext"></param>
+    /// <returns>The Access and Refresh authentication tokens</returns>
+    /// <exception cref="AuthenticationException"></exception>
+    private static (string Access, string Refresh) ProcessCookies(HttpContext httpContext)
+    {
+        string Access = string.Empty, Refresh = string.Empty;
+        foreach (var Cookie in httpContext.Request.Cookies)
+        {
+            string CookieContent = Cookie.Value.Split("; ")[0];
+            if ("Authorization" == Cookie.Key && CookieContent.StartsWith("Bearer "))
+            {
+                var CookieParts = CookieContent.Split(" ");
+                if (CookieParts.Length != 2)
+                    throw new AuthenticationException("Invalid authorization cookie format.");
+                Access = CookieParts[1];
+            }
+            else if ("X-Refresh-Token" == Cookie.Key) Refresh = CookieContent;
+        }
+
+        if (string.IsNullOrWhiteSpace(Access) || string.IsNullOrWhiteSpace(Refresh))
+            throw new AuthenticationException("Processing cookies failed.");
+
+        return (Access, Refresh);
+    }
+
+    /// <summary>
     /// Returns the verified token in a Dictionary with keys of "header", "payload", and "signature"
     /// </summary>
     /// <param name="Token"></param>
@@ -364,12 +435,7 @@ public static class Authenticator
 
         Context.SaveChanges();
 
-        if (httpContext != null)
-        {
-            httpContext.Response.Headers.Authorization = $"Bearer {AccessToken}";
-            httpContext.Response.Headers["X-Refresh-Token"] = RefreshToken;
-            httpContext.Response.Headers["Access-Control-Expose-Headers"] = "Authorization, X-Refresh-Token";
-        }
+        if (httpContext != null) AddHttpOnlyTokens(httpContext, AccessToken, RefreshToken);
 
         return new Dictionary<string, string>
         {
@@ -401,11 +467,37 @@ public static class Authenticator
         return $"{EncodedHeader}.{EncodedPayload}.{EncryptedSignature}";
     }
 
+    private static void ValidateTokenClaims(
+        Dictionary<string, Dictionary<string, JsonElement>> ProcessedToken)
+    {
+        // Validate the header
+        if (!ProcessedToken["header"].TryGetValue("alg", out var alg))
+            throw new AuthenticationException("Authentication token is missing algorithm claim.");
+
+        if (alg.GetString() != "RS256")
+            throw new AuthenticationException("Authentication token algorithm is invalid.");
+
+        if (!ProcessedToken["header"].TryGetValue("typ", out var jwt))
+            throw new AuthenticationException("Authentication token is missing type claim.");
+
+        if (jwt.GetString() != "JWT")
+            throw new AuthenticationException("Authentication token type is invalid.");
+
+        // Validate the payload
+        if (!ProcessedToken["payload"].TryGetValue("exp", out var exp))
+            throw new AuthenticationException("Authentication token is missing expiration claim.");
+
+        if (IsExpired(DateTimeOffset.FromUnixTimeSeconds(exp.GetInt64())))
+            throw new AuthenticationException("Token has expired.");
+
+        if (!ProcessedToken["payload"].ContainsKey("sub"))
+            throw new AuthenticationException("Missing subject claim.");
+    }
+
     /// <summary>
     /// Verifies that the JWT is untampered.
     /// </summary>
     /// <param name="Token"></param>
-    /// <param name="PublicKey"></param>
     /// <returns>Returns true if the signed JWT is untampered, false otherwise.</returns>
     public static bool VerifyToken(string Token)
     {
@@ -413,7 +505,7 @@ public static class Authenticator
         {
             string[] TokenParts = Token.Split('.');
             if (TokenParts.Length != 3)
-                throw new AuthenticationException("Invalid token provided.");
+                throw new Exception("Invalid token provided.");
 
             byte[] EncodedMessage = Encoding.UTF8.GetBytes($"{TokenParts[0]}.{TokenParts[1]}");
             byte[] DecodedSignature = Base64UrlEncoder.DecodeBytes(TokenParts[2]);
@@ -428,11 +520,6 @@ public static class Authenticator
                 HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1);
         }
-        catch (AuthenticationException) { throw; }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw new AuthenticationException("Invalid token provided.");
-        }
+        catch (Exception) { throw new AuthenticationException("Invalid token provided."); }
     }
 }
