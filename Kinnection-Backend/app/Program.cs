@@ -4,6 +4,12 @@ class Program
 {
   static void Main()
   {
+    // Get required env vars
+    var ANG_PORT = Environment.GetEnvironmentVariable("ANG_PORT");
+    var ISSUER = Environment.GetEnvironmentVariable("ISSUER");
+    if (string.IsNullOrWhiteSpace(ANG_PORT) || string.IsNullOrWhiteSpace(ISSUER))
+      throw new Exception("Missing value for an Angular environment variable!");
+
     // Connect to the DB
     using var Context = DatabaseManager.GetActiveContext();
 
@@ -13,40 +19,40 @@ class Program
     builder.Services.AddDbContext<KinnectionContext>(options =>
       options.UseMySQL(DatabaseManager.DBURL));
 
-    builder.Services.AddCors(options =>
+    // Compile allowed origins
+    IEnumerable<string> Origins = new List<string>
     {
-      options.AddPolicy("AllowFrontend", policy =>
-      {
-        var ANG_PORT = Environment.GetEnvironmentVariable("ANG_PORT");
-        var ISSUER = Environment.GetEnvironmentVariable("ISSUER");
-        if (string.IsNullOrWhiteSpace(ANG_PORT) ||
-          string.IsNullOrWhiteSpace(ISSUER))
-          throw new Exception("Missing value for an Angular environment variable!");
+      ISSUER, // Root
+      $"{ISSUER}:{ANG_PORT}", // Root with container port
+    };
 
-        if (builder.Environment.IsDevelopment())
-        {
-          policy.WithOrigins("*");
-        }
-        else
-        {
-          policy.WithOrigins($"{ISSUER}:{ANG_PORT}")
-            .AllowCredentials();
-        }
-
-        policy.AllowAnyHeader()
-          .AllowAnyMethod();
-      });
-    });
-
+    // Add in dev services
     if (builder.Environment.IsDevelopment())
     {
+      var ANG_LOCAL = Environment.GetEnvironmentVariable("ANG_PORT_LOCAL");
+      if (string.IsNullOrWhiteSpace(ANG_LOCAL))
+        throw new Exception("Missing ANG_PORT_LOCAL environment variable!");
+      Origins = Origins.Append($"{ISSUER}:{ANG_LOCAL}"); // Root with local dev port
       builder.Services.AddSwaggerGen();
       builder.Logging.AddConsole();
     }
 
+    // Add CORS preflight checks
+    builder.Services.AddCors(options =>
+    {
+      options.AddPolicy("AllowFrontend", policy =>
+      {
+        policy.WithOrigins(Origins.ToArray())
+          .AllowCredentials()
+          .AllowAnyHeader()
+          .AllowAnyMethod();
+      });
+    });
+
     var app = builder.Build();
 
     app.UseCors("AllowFrontend");
+
     if (app.Environment.IsDevelopment())
     {
       app.UseSwagger();
