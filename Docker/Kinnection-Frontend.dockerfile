@@ -1,12 +1,24 @@
 FROM node:23.11.1-alpine AS build
 WORKDIR /app
 
+RUN apk add --no-cache bash gettext
+
 # Copy dependency definitions and install dependencies
 COPY Kinnection-Frontend/package*.json ./
 RUN npm install
 
 # Copy app files
 COPY Kinnection-Frontend .
+COPY ../Docker/.env /app/Docker/.env
+
+# Set Angular environment variables
+# NOTE: Sensitive env vars not exposed as we only save the specific ones specified in the template.
+#  All over env vars are removed when the nginx container is spun up.
+WORKDIR /app/src/environments
+RUN ./SetEnvVars.sh
+
+# Get back to the root dir
+WORKDIR /app
 
 # Build the Angular app
 RUN npm run build --prod

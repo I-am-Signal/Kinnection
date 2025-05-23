@@ -31,9 +31,24 @@ Kinnection is a web application that will allow the user to track their family t
   - `-v` will also remove any associated container volumes.
     - Only use this argument when you need a clean slate as it removes all associated permant data storage in the volumes.
 
+### Running Local Development Environment
+
+- Note: Currently only set up for frontend development this way. To use the backend alongside the locally-hosted frontend, bring up the containers.
+- Navigate to the `Kinnection/Kinnection-Frontend/src/environments` directory.
+- Enable file scripting permissions and set the environment files:
+  - Windows:
+    - `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
+    - `./SetEnvVars.ps1 -e "../../../Docker/.env"`
+  - MAC/Linux:
+    - `chmod +x /path/to/GetEnvVars.sh`
+    - `./SetEnvVars.sh -e "../../../Docker/.env"`
+  - Note: the environment file must be specified as `SetEnvVars` by default targets filepaths meant for use in the docker containers. They differ from the local development paths.
+- Navigate back to `Kinnection/Kinnection-Frontend`.
+- Start the frontend with `npm start`.
+
 ## Running the tests
 
-### Running in Development Environment
+### Running Locally
 
 - Navigate to the `Kinnection/Kinnection-Backend/test` directory.
 - Get environment variables needed for local run:

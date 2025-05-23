@@ -8,16 +8,13 @@ import { firstValueFrom } from 'rxjs';
 })
 export class NetrunnerService {
   http = inject(HttpClient);
-  myHeaders = new Headers({
-    'Content-Type': 'application/json',
-    Authorization: 'Bearer mytoken',
-  });
 
   get<T>(uri: string, headers?: HttpHeaders) {
     return this.http.get<T>(uri, {
       headers: headers,
       observe: 'response',
       responseType: 'json',
+      withCredentials: true
     });
   }
 
@@ -30,6 +27,7 @@ export class NetrunnerService {
       headers: headers,
       observe: 'response',
       responseType: 'json',
+      withCredentials: true
     });
   }
 
@@ -42,6 +40,7 @@ export class NetrunnerService {
       headers: headers,
       observe: 'response',
       responseType: 'json',
+      withCredentials: true
     });
   }
 
@@ -50,6 +49,7 @@ export class NetrunnerService {
       headers: headers,
       observe: 'response',
       responseType: 'json',
+      withCredentials: true
     });
   }
 
@@ -66,46 +66,37 @@ export class NetrunnerService {
       lname: 'string',
       email: 'string',
       password:
-        'BEQ2LDlB0+iYZoYobiKpx7OnnoKPGL0a/jLplevCdClYaDemG5vAcnTKnSEZmM2TXJ7kljDUdh8deZqYMl03XXfgPIWi7XtDdR2+M+Hy3JEovc8k+sAfRdmFkDBM01Y7CEuyXNwzQwDhEbTssqvZ/z5UivcjfxPVoOvLgxJj4QMYPIrw/p2f6JArPwQhScRGZpxsLLRs/46CokpRGrMch+HbWSce6s2eJfo0M+FpUGiFtHJIDLLUdK4TOf30i1XeUFAtDgCzo05ACtJxdQu92a3Hek6cnRDzV4hikGRAKOeNOhxrV3s81f/6uur0iiFNW4TL4Q9UiWsGPcR4C8b2LQ==',
+        'WQldXmZPyzJPeHygAlaFdCoY5x8ZTwST2aZUGAK75FvQ6T/LcLyNoHY2pQaWNFQJ9FmH1wrdCk4njSwMOPbQVZmS30FKAitXhtNHwchbjJHvoOAui33+XfEEBofmPJMMHkFMlEXpIx4XA492TXhXpUf4YO/0VAs3o9qAH2gt0zWZig1xEvAFAlMQPeN0Dt32iHFKFmv7vH6uctjdpyScR945xN64e8hg4X3ZQ0fFVtPVOoLjBh/+AosvB/NZc/9TODtoNyV7DyhxXCmeGRezEpkYjbkyDdNmDqIN3b6fg9hvYabjyJqixNwQnFjtnj5DSYoRBEUCcQ6bXlAYZd4CTQ==',
     };
 
     let post_response = await firstValueFrom(
       this.post<ModifyUsers>('http://localhost:8080/users', content)
     );
     id = post_response.body?.id ?? 0;
-    headers = post_response.headers;
 
     console.log('Post id:', id);
-    console.log('Post Access:', headers.get('Authorization'));
-    console.log('Post Refresh:', headers.get('X-Refresh-Token'));
 
     let put_response = await firstValueFrom(
       this.put<ModifyUsers>(
         `http://localhost:8080/users/${id}`,
-        content,
-        headers
+        content
       )
     );
-    headers = put_response.headers;
 
-    console.log('Put id:', id);
-    console.log('Put Access:', headers.get('Authorization'));
-    console.log('Put Refresh:', headers.get('X-Refresh-Token'));
+    console.log('Put id:', put_response.body?.id);
 
     get_response = await firstValueFrom(
       this.get(`http://localhost:8080/users/${id}`, headers)
     );
     headers = get_response.headers;
 
-    console.log('Get Access:', headers.get('Authorization'));
-    console.log('Get Refresh:', headers.get('X-Refresh-Token'));
+    console.log('Get Status:', get_response.status);
 
     let delete_response = await firstValueFrom(
       this.delete(`http://localhost:8080/users/${id}`, headers)
     );
     headers = delete_response.headers;
 
-    console.log('Delete Access:', headers.get('Authorization'));
-    console.log('Delete Refresh:', headers.get('X-Refresh-Token'));
+    console.log('Delete Status:', delete_response.status); 
   }
 }

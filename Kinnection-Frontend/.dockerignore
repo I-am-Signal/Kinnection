@@ -5,3 +5,7 @@ dist
 .history
 .DS_Store
 *.log
+
+# Must recompile environment vars
+src/environments/environments.development.ts
+src/environments/environments.ts

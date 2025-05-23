@@ -1,50 +1,43 @@
 section {
-  width: 91.94rem;
-}
-
-.bgrd-container {
-  display: flex;
-  justify-content: center;
-}
-
-img {
-  position: absolute;
-  width: 100rem;
-  overflow: hidden;
-  max-height: 100rem;
-  max-height: 40.22rem;
-  object-fit: cover;
-  margin: auto;
-}
-
-.landing {
   position: relative;
+  max-height: 100em;
+  max-width: 100em;
 }
 
-div.get_started_container {
+.background {
+  display: flex;
+  height: 90vh;
+  object-fit: cover;
+  overflow: hidden;
+  position: absolute;
+  width: 100%;
+}
+
+.get_started_container {
   background-color: rgba(255, 255, 255, 0.85);
   border-radius: 1em;
   border-width: 0;
-  width: 20em;
-  position: absolute;
-  bottom: -30rem;
+  bottom: -18rem;
+  box-shadow: 0 0 0.5rem #ccc;
   left: 5rem;
-  z-index: 1;
   padding: 1em;
-  box-shadow: 0 0 0.5rem white;
+  position: relative;
   text-align: center;
-}
+  width: 20em;
 
-button {
-  border-width: 2px;
-  border-radius: 0.75em;
-  border-width: 0;
-  margin: 1em;
-  padding: 1em;
-  box-shadow: 0 0 0.25rem grey;
+  button {
+    border-radius: 0.75em;
+    border-width: 0;
+    box-shadow: 0 0 0.25rem grey;
+    margin: 1em;
+    padding: 1em;
 
-  &:hover {
-    background-color: lightgray;
-    box-shadow: 0 0 0.25rem black;
+    &:hover {
+      background-color: #eee;
+      box-shadow: 0 0 0.25rem black;
+      cursor: pointer;
+      transition: ease-in-out 0.2s;
+      transform: scale(1.05);
+    }
   }
 }
