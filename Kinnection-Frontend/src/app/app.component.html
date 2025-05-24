@@ -1,4 +1,10 @@
-<app-header></app-header>
+<app-header
+  [homeRoute]="homeRoute()"
+  [route1]="loginRoute()"
+  [route1Text]="'Login'"
+  [route2]="signUpRoute()"
+  [route2Text]="'Sign Up'"
+></app-header>
 <main class="background">
   <router-outlet />
 </main>

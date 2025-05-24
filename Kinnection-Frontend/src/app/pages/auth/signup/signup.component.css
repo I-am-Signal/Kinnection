@@ -1,0 +1,12 @@
+.align-label {
+  width: 12.5em;
+}
+
+.signup {
+  align-items: center;
+  justify-content: center;
+}
+
+app-tooltip {
+  padding-bottom: 1em;
+}

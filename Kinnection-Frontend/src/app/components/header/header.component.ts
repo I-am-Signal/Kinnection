@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -8,5 +8,9 @@ import { RouterLink } from '@angular/router';
   styleUrl: './header.component.css'
 })
 export class HeaderComponent {
-  title = signal("Kinnection");
+  homeRoute = input.required();
+  route1 = input.required();
+  route1Text = input.required();
+  route2 = input.required();
+  route2Text = input.required();
 }

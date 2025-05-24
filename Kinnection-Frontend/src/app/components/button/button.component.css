@@ -1,0 +1,10 @@
+button {
+  border-radius: 0.25em;
+  background-color: #ccc;
+  width: 12em;
+  &:hover {
+    background-color: #eee;
+    transition: ease-in-out 0.2s;
+    transform: scale(1.05);
+  }
+}

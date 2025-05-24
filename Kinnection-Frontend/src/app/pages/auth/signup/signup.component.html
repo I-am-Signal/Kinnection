@@ -1,0 +1,61 @@
+<section class="signup">
+  <app-form-card>
+    <h1>Sign Up</h1>
+    <div class="align-label">
+      <label for="fname">First name:</label>
+    </div>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'fname'"
+        [value]="fname()"
+        placeholder="First name"
+        (valueChange)="fname.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <div class="align-label">
+      <label for="lname">Last name:</label>
+    </div>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'lname'"
+        [value]="lname()"
+        placeholder="Last name"
+        (valueChange)="lname.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <div class="align-label">
+      <label for="email">Email:</label>
+    </div>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'email'"
+        [value]="email()"
+        placeholder="Email address"
+        (valueChange)="email.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <div class="align-label">
+      <label for="password">Password:</label>
+    </div>
+    <app-tooltip [toolTipText]="'Password must be at least 8 characters long'">
+      <app-textbox
+        [name]="'password'"
+        [value]="password()"
+        placeholder="Password"
+        (valueChange)="password.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <div class="align-label">
+      <label for="confirm">Confirm Password:</label>
+    </div>
+    <app-tooltip [toolTipText]="'Must match password'">
+      <app-textbox
+        [name]="'confirm'"
+        [value]="confirm()"
+        placeholder="Confirm Password"
+        (valueChange)="confirm.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-button [text]="'Sign Up!'" (clicked)="onSubmitClick()"></app-button>
+  </app-form-card>
+</section>

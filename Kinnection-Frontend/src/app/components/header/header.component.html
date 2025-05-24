@@ -1,10 +1,12 @@
 <header>
   <nav>
-    <span routerLink="/">{{ title() }}</span>
-    <img class="logo" src="kinnection_tree.ico" routerLink="/" />
+    <span routerLink="{{ homeRoute() }}">Kinnection</span>
     <ul>
-      <li routerLink="/login">Login</li>
-      <li routerLink="/sign_up">Sign Up</li>
+      <li routerLink="{{ route1() }}">{{ route1Text() }}</li>
+      <li routerLink="{{ route2() }}">{{ route2Text() }}</li>
     </ul>
   </nav>
+  <div class="logo">
+    <img src="kinnection_tree.ico" routerLink="{{ homeRoute() }}" />
+  </div>
 </header>
