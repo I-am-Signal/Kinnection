@@ -237,10 +237,41 @@ public static class Authenticator
     }
 
     /// <summary>
+    /// Generates a token for use in MFA requests.
+    /// </summary>
+    /// <param name="UserID"></param>
+    /// <returns></returns>
+    public static string GenerateMFAPassCode(
+        int UserID,
+        KinnectionContext Context)
+    {
+        var CurrAuth = Context.Authentications
+            .First(a => a.User.ID == UserID);
+
+        long IssuedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        long ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15).ToUnixTimeSeconds();
+        var PassCode = GenerateRandomString(6, true);
+
+        CurrAuth.Reset = SignToken(JsonSerializer.Serialize(
+            new
+            {
+                iss = $"{ISSUER}:{ASP_PORT}",
+                sub = UserID,
+                exp = ExpiresAt,
+                iat = IssuedAt,
+                aud = new List<string> { "/auth/mfa/" },
+                psc = PassCode
+            }));
+        Context.SaveChanges();
+
+        return PassCode;
+    }
+
+    /// <summary>
     /// Generates a token for use in password resetting
     /// </summary>
     /// <param name="Email"></param>
-    /// <returns>(Password Reset Token, Password Reset URL)</returns>
+    /// <returns>Password Reset URL</returns>
     public static string GeneratePassResetURL(
         string Email)
     {
@@ -299,18 +330,22 @@ public static class Authenticator
     /// </summary>
     /// <param name="length"></param>
     /// <returns></returns>
-    public static string GenerateRandomString(int length = 24)
+    public static string GenerateRandomString(int length = 24, bool NumberOnly = false)
     {
-        return RandomNumberGenerator.GetString(
+        char[] CharSet;
+        if (NumberOnly)
+            CharSet = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+        else
+            CharSet =
             [
                 'A','B','C','D','E','F','G','H','I','J','K','L','M',
                 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                 'a','b','c','d','e','f','g','h','i','j','k','l','m',
                 'n','o','p','q','r','s','t','u','v','w','x','y','z',
                 '0','1','2','3','4','5','6','7','8','9','#','@','$'
-            ],
-            length
-        );
+            ];
+
+        return RandomNumberGenerator.GetString(CharSet, length);
     }
 
     /// <summary>
@@ -411,9 +446,7 @@ public static class Authenticator
         string RefreshHash = RefreshToken.Split('.')[2];
 
         if (ExistingUser == null)
-        {
             throw new KeyNotFoundException($"User {UserID} does not exist.");
-        }
         else if (Auth == null)
         {
             Auth = new Authentication
@@ -431,6 +464,7 @@ public static class Authenticator
         {
             Auth.Authorization = AccessHash;
             Auth.Refresh = RefreshHash;
+            Auth.Reset = GenerateRandomString();
         }
 
         Context.SaveChanges();

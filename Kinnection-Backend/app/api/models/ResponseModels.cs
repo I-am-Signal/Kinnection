@@ -1,5 +1,11 @@
 namespace Kinnection
 {
+    // Auth/Login
+    public class PostLoginResponse : IId
+    {
+        public required int Id { get; set; }
+    }
+
     // Trees
     public class GetTreesResponse
     {

@@ -82,47 +82,6 @@ public class AuthTest
     }
 
     [Test, Order(2)]
-    public async Task PostAuthLogin()
-    {
-        // Make request
-        var RequestContent = new Dictionary<string, JsonElement>()
-        {
-            ["email"] = UserInfo["email"]!,
-            ["password"] = UserInfo["password"]!
-        };
-
-        HttpResponseMessage Response = await HttpService.PostAsync(
-            URI + AuthSubDir + "login/",
-            RequestContent
-        );
-
-        // Ensure expected status code
-        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
-
-        // Evaluate Headers
-        // Verify and save tokens
-        TestRunner.CheckTokens(Response.Headers);
-    }
-
-    [Test, Order(3)]
-    public async Task PosPostVerify()
-    {
-        // Make request
-        HttpResponseMessage Response = await HttpService.PostAsync(
-            URI + AuthSubDir + "verify/",
-            null!,
-            Headers: TestRunner.GetHeaders()
-        );
-
-        // Ensure expected status code
-        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
-
-        // Evaluate Headers
-        // Verify and save tokens
-        TestRunner.CheckTokens(Response.Headers);
-    }
-
-    [Test, Order(4)]
     public async Task PosPostPass()
     {
         // Make request to forgot
@@ -139,9 +98,6 @@ public class AuthTest
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-        // Verify existing tokens are not invalidated by reset request
-        await PosPostVerify();
 
         // Make request to reset
         UserInfo["password"] = JsonSerializer.SerializeToElement(
@@ -181,17 +137,72 @@ public class AuthTest
 
         // Ensure expected status code
         Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+    }
 
-        // Make request to login again with new credentials
-        RequestContent = new Dictionary<string, JsonElement>()
+    [Test, Order(3)]
+    public async Task PostAuthLogin()
+    {
+        // Make request to /auth/login
+        var RequestContent = new Dictionary<string, JsonElement>()
         {
             ["email"] = UserInfo["email"]!,
             ["password"] = UserInfo["password"]!
         };
 
-        Response = await HttpService.PostAsync(
+        HttpResponseMessage Response = await HttpService.PostAsync(
             URI + AuthSubDir + "login/",
             RequestContent
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Evaluate Content
+        var Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+        var ID = Output.GetProperty("id");
+
+        // Manually check email for confirmation that services works
+
+        // Check passcode verification
+        using var Context = DatabaseManager.GetActiveContext();
+
+        var UserAuth = Context.Authentications
+            .FirstOrDefault(a => a.User.ID == ID.GetInt32()) ??
+            throw new Exception("User authentication record is missing!");
+
+        var ProcessedToken = Authenticator.ProcessToken(UserAuth.Reset);
+
+        ProcessedToken["payload"].TryGetValue("psc", out var PassCode);
+
+        // Make request to /auth/mfa
+        RequestContent = new Dictionary<string, JsonElement>()
+        {
+            ["id"] = ID,
+            ["passcode"] = JsonSerializer.SerializeToElement(PassCode)!
+        };
+
+        Response = await HttpService.PostAsync(
+            URI + AuthSubDir + "mfa/",
+            RequestContent
+        );
+
+        // Ensure expected status code
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        // Evaluate Headers
+        // Verify and save tokens
+        TestRunner.CheckTokens(Response.Headers);
+    }
+
+    [Test, Order(4)]
+    public async Task PosPostVerify()
+    {
+        // Make request
+        HttpResponseMessage Response = await HttpService.PostAsync(
+            URI + AuthSubDir + "verify/",
+            null!,
+            Headers: TestRunner.GetHeaders()
         );
 
         // Ensure expected status code

@@ -7,6 +7,12 @@ namespace Kinnection
         public required string Password { get; set; }
     }
 
+    public class MFARequest : IId
+    {
+        public required int Id { get; set; }
+        public required string Passcode { get; set; }
+    }
+
     // Auth/Pass
     public class ForgotPassRequest
     {

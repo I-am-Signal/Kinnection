@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Kinnection;
+
 static class AuthAPIs
 {
     public static void APIs(WebApplication app)
     {
-        app.MapPost("/auth/login", (HttpContext httpContext, LoginRequest Request) =>
+        app.MapPost("/auth/login", async (HttpContext httpContext, LoginRequest Request) =>
         {
             try
             {
@@ -35,16 +36,39 @@ static class AuthAPIs
                 // Check password is correct
                 bool PassIsValid = PassForge.IsPassCorrect(
                     KeyMaster.Decrypt(Request.Password), ExistingUser.ID);
-
                 if (!PassIsValid)
                     return Results.Problem(
                         statusCode: 401,
                         detail: "The email/password combination used is invalid."
-                    );                
+                    );
 
-                // Compile Response
-                Authenticator.Provision(ExistingUser.ID, httpContext);
-                return Results.NoContent();
+                // Credentials have been verified
+                // Create MFA passcode
+                var PassCode = Authenticator.GenerateMFAPassCode(
+                    ExistingUser.ID,
+                    Context);
+
+                // Send MFA email
+                var Response = await JustGonnaSendIt.SendEmail(
+                    Address: new SendGrid.Helpers.Mail.EmailAddress(ExistingUser.Email),
+                    Subject: "Multi-Factor Authentication Request",
+                    PlainTextContent: @$"Multi-Factor Authentication Request
+{PassCode}
+This code will expire in 15 minutes. Do not share this code with anyone else.",
+                    HTMLContent: @$"<h1>Multi-Factor Authentication Request</h1>
+<h2>{PassCode}</h2>
+<p>This code will expire in 15 minutes. Do not share this code with anyone else.</p>");
+
+                if (Response.StatusCode != System.Net.HttpStatusCode.Accepted)
+                {
+                    Console.WriteLine(Response);
+                    throw new Exception("Response from SendGrid status code was not success!");
+                }
+
+                return Results.Ok(new PostLoginResponse
+                {
+                    Id = ExistingUser.ID
+                });
             }
             catch (KeyNotFoundException k)
             {
@@ -62,6 +86,54 @@ static class AuthAPIs
             }
         })
         .WithName("PostLogin")
+        .WithOpenApi();
+
+        app.MapPost("/auth/mfa/", (HttpContext httpContext, MFARequest Request) =>
+        {
+            try
+            {
+                using var Context = DatabaseManager.GetActiveContext();
+
+                var UserAuth = Context.Authentications
+                    .Include(a => a.User)
+                    .First(a => a.User.ID == Request.Id);
+
+                var ProcessedToken = Authenticator.ProcessToken(UserAuth.Reset);
+
+                // Verify passcode has not expired
+                if (Authenticator.IsExpired(
+                    DateTimeOffset.FromUnixTimeSeconds(
+                        ProcessedToken["payload"]["exp"].GetInt64())))
+                    throw new AuthenticationException("Expired Reset Token");
+
+                ProcessedToken["payload"].TryGetValue("psc", out var PassCode);
+
+                // Verify passcode against stored passcode token
+                if (PassCode.GetString() != Request.Passcode)
+                {
+                    UserAuth.Reset = Authenticator.GenerateRandomString();
+                    Context.SaveChanges();
+                    throw new AuthenticationException("Incorrect passcode. Login attempt failed.");
+                }
+
+                // Provision tokens
+                Authenticator.Provision(Request.Id, httpContext);
+                return Results.NoContent();
+            }
+            catch (AuthenticationException a)
+            {
+                Console.WriteLine($"Issue at POST /auth/mfa: {a}");
+                return Results.Problem(
+                    statusCode: 401,
+                    detail: a.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Issue at POST /auth/mfa: {e}");
+                return Results.Problem(statusCode: 500);
+            }
+        })
+        .WithName("PostMFA")
         .WithOpenApi();
 
         app.MapPost("/auth/logout/", (HttpContext httpContext) =>
