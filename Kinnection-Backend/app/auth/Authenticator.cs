@@ -527,9 +527,6 @@ public static class Authenticator
         if (!ProcessedToken["payload"].TryGetValue("exp", out var exp))
             throw new AuthenticationException("Authentication token is missing expiration claim.");
 
-        if (IsExpired(DateTimeOffset.FromUnixTimeSeconds(exp.GetInt64())))
-            throw new AuthenticationException("Token has expired.");
-
         if (!ProcessedToken["payload"].ContainsKey("sub"))
             throw new AuthenticationException("Missing subject claim.");
     }
