@@ -6,3 +6,6 @@ input {
     box-shadow: 0 0 1em white;
   }
 }
+label {
+  padding-left: .2em;
+}

@@ -1,0 +1,5 @@
+@if (link()){
+<a href="{{ link() }}">{{ text() }}</a>
+} @else if (route()) {
+<a routerLink="{{ route() }}">{{ text() }}</a>
+}

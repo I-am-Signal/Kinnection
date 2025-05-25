@@ -1,0 +1,22 @@
+<section>
+  <app-form-card>
+    <h1>MFA Login Attempt</h1>
+    <p>
+      Please check your email for the verification code. Check spam if it is not
+      in your inbox. The email make take up to several minutes to arrive.
+    </p>
+    <app-tooltip [toolTipText]="'Password must be at least 8 characters long'">
+      <app-textbox
+        [name]="'passcode'"
+        [label]="'Passcode:'"
+        [value]="passcode()"
+        placeholder="Passcode"
+        (valueChange)="passcode.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-button
+      [text]="'Complete MFA'"
+      (clicked)="onSubmitClick()"
+    ></app-button>
+  </app-form-card>
+</section>

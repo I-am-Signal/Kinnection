@@ -1,0 +1,29 @@
+<section>
+  <app-form-card>
+    <h1>Login</h1>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'email'"
+        [label]="'Email:'"
+        [value]="email()"
+        placeholder="Email address"
+        (valueChange)="email.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-tooltip [toolTipText]="'Password must be at least 8 characters long'">
+      <app-textbox
+        [name]="'password'"
+        [label]="'Password:'"
+        [value]="password()"
+        placeholder="Password"
+        (valueChange)="password.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-button [text]="'Login'" (clicked)="onSubmitClick()"></app-button>
+    <app-anchor
+      [route]="'/sign_up'"
+      [text]="'Not signed up?'"
+      style="font-size: small"
+    ></app-anchor>
+  </app-form-card>
+</section>

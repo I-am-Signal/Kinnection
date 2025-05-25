@@ -11,6 +11,7 @@ export class TextboxComponent {
   value = input.required();
   placeholder = input('');
   valueChange = output<string>();
+  label = input("");
 
   onInput(event: Event) {
     const input = event.target as HTMLInputElement;

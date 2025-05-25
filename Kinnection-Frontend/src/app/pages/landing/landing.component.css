@@ -6,7 +6,7 @@ section {
 
 .background {
   display: flex;
-  height: 90vh;
+  height: 89.9vh;
   object-fit: cover;
   overflow: hidden;
   position: absolute;
