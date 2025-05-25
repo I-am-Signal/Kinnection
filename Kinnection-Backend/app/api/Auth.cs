@@ -181,8 +181,6 @@ This code will expire in 15 minutes. Do not share this code with anyone else.",
             try
             {
                 // URL needs to be frontend url
-                // This would allow for the password to be collected and then sent to the backend
-                // via /auth/pass/reset with Password in the body
                 string ResetURL = Authenticator.GeneratePassResetURL(Request.Email);
 
                 var Response = await JustGonnaSendIt.SendEmail(

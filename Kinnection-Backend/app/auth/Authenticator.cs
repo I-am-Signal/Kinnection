@@ -13,7 +13,14 @@ public static class Authenticator
         "{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
     private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER")!;
     private static readonly string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!;
-
+    /// <summary>
+    /// Adds the access and refresh tokens to the Set-Cookie header as 'Authorization' and 
+    /// 'X-Refresh-Token' respectively.
+    /// </summary>
+    /// <param name="httpContext"></param>
+    /// <param name="Access"></param>
+    /// <param name="Refresh"></param>
+    /// <exception cref="Exception"></exception>
     public static void AddHttpOnlyTokens(HttpContext httpContext, string Access, string Refresh)
     {
         string ENV = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")!;
@@ -297,8 +304,7 @@ public static class Authenticator
         CurrAuth.Reset = SignedToken;
         Context.SaveChanges();
 
-        // Change to route used in frontend
-        return Base64UrlEncoder.Encode(SignedToken);
+        return $"{ISSUER}/reset/{Base64UrlEncoder.Encode(SignedToken)}";
     }
 
     /// <summary>
