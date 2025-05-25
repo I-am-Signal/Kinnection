@@ -1,0 +1,33 @@
+<section>
+  <app-form-card>
+    @if (successful()){
+    <h1>Password Successfully Reset</h1>
+    <p>Your password was successfully reset.</p>
+    <app-home></app-home>
+    } @else {
+    <h1>Reset Password</h1>
+    <app-tooltip [toolTipText]="'Password must be at least 8 characters long'">
+      <app-textbox
+        [name]="'password'"
+        [label]="'New Password:'"
+        [value]="password()"
+        placeholder="New Password"
+        (valueChange)="password.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-tooltip [toolTipText]="'Must match new password'">
+      <app-textbox
+        [name]="'confirm'"
+        [label]="'Confirm Password:'"
+        [value]="confirm()"
+        placeholder="Confirm Password"
+        (valueChange)="confirm.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-button
+      [text]="'Submit Password Reset'"
+      (clicked)="onSubmitClick()"
+    ></app-button>
+    }
+  </app-form-card>
+</section>

@@ -9,14 +9,16 @@ import { KeymasterService } from '../../../services/keymaster.service';
 import { TooltipComponent } from '../../../components/tooltip/tooltip.component';
 import { FormCardComponent } from '../../../components/form-card/form-card.component';
 import { FormControl, Validators } from '@angular/forms';
+import { AnchorComponent } from '../../../components/anchor/anchor.component';
 
 @Component({
   selector: 'app-signup',
   imports: [
-    TextboxComponent,
+    AnchorComponent,
     ButtonComponent,
-    TooltipComponent,
     FormCardComponent,
+    TextboxComponent,
+    TooltipComponent,
   ],
   templateUrl: './signup.component.html',
   styleUrl: './signup.component.css',
@@ -47,7 +49,7 @@ export class SignupComponent {
 
     const EmailValidator = new FormControl(this.email(), [Validators.email]);
 
-    if (!EmailValidator.valid) {
+    if (!EmailValidator.valid || this.email() == "") {
       alert('Email address is invalid.');
       return;
     }

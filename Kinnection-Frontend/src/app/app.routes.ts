@@ -37,4 +37,22 @@ export const routes: Routes = [
       );
     },
   },
+  {
+    path: 'forgot',
+    pathMatch: 'full',
+    loadComponent() {
+      return import('./pages/auth/forgot/forgot.component').then(
+        (m) => m.ForgotComponent
+      );
+    },
+  },
+  {
+    path: 'reset/:reset-token',
+    pathMatch: 'full',
+    loadComponent() {
+      return import('./pages/auth/reset/reset.component').then(
+        (m) => m.ResetComponent
+      );
+    },
+  },
 ];

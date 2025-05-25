@@ -1,4 +1,4 @@
-import { Component, inject, input, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormCardComponent } from '../../../components/form-card/form-card.component';
 import { TooltipComponent } from '../../../components/tooltip/tooltip.component';
 import { TextboxComponent } from '../../../components/textbox/textbox.component';
@@ -8,7 +8,7 @@ import { environment as env } from '../../../../environments/environment';
 import { KeymasterService } from '../../../services/keymaster.service';
 import { NetrunnerService } from '../../../services/netrunner.service';
 import { Login } from '../../../models/auth';
-import { ActivatedRoute, ActivatedRouteSnapshot } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-mfa',
@@ -49,7 +49,7 @@ export class MfaComponent implements OnInit {
     );
     console.log('MFA Status:', mfa_response.status);
 
-    // Route to mfa on login endpoint success
+    // Route to user dash on mfa success
     // Report issue to user on unsuccessful login
   }
 }

@@ -6,10 +6,8 @@ import { FormCardComponent } from '../../../components/form-card/form-card.compo
 import { KeymasterService } from '../../../services/keymaster.service';
 import { NetrunnerService } from '../../../services/netrunner.service';
 import { FormControl, Validators } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
-import { ModifyUsers } from '../../../models/users';
 import { environment as env } from '../../../../environments/environment';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AnchorComponent } from '../../../components/anchor/anchor.component';
 import { Login } from '../../../models/auth';
 
@@ -35,7 +33,7 @@ export class LoginComponent {
   async onSubmitClick() {
     const EmailValidator = new FormControl(this.email(), [Validators.email]);
 
-    if (!EmailValidator.valid) {
+    if (!EmailValidator.valid || this.email() == '') {
       alert('Email address is invalid.');
       return;
     }
@@ -52,15 +50,26 @@ export class LoginComponent {
       password: encPass,
     };
 
-    let response = await firstValueFrom(
-      this.http.post<Login>(`${env.ISSUER}:${env.ASP_PORT}/auth/login`, content)
-    );
-
-    if (response.status != 200) {
-      alert(response.statusText);
-      return;
-    }
-
-    this.router.navigateByUrl(`/mfa/${response.body?.id}`);
+    this.http
+      .post<Login>(`${env.ISSUER}:${env.ASP_PORT}/auth/login`, content)
+      .subscribe({
+        next: (response) => {
+          this.router.navigateByUrl(`/mfa/${response.body?.id}`);
+        },
+        error: (err) => {
+          switch (err.status) {
+            case 401:
+              alert('The email/password combination used is invalid.');
+              break;
+            case 404:
+              alert(
+                `404 Not Found: A user with email ${this.email()} was not found.`
+              );
+              break;
+            case 500:
+              alert('500 Internal Server Error. Please try again later.');
+          }
+        },
+      });
   }
 }

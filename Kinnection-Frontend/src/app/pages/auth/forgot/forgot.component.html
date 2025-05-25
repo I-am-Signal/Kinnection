@@ -1,0 +1,34 @@
+<section>
+  <app-form-card>
+    @if (!check()) {
+    <h1>Forgot Password</h1>
+    <p>
+      So you forgot your password. It happens. To reset it, please provide the
+      email address associated with the account below. An email will be sent to
+      that email address with the reset link.
+    </p>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'email'"
+        [label]="'Email:'"
+        [value]="email()"
+        placeholder="Email address"
+        (valueChange)="email.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-button
+      [text]="'Submit Reset Request'"
+      (clicked)="onSubmitClick()"
+    ></app-button>
+    } @else {
+    <h1>Check Your Email</h1>
+    <p>
+      You just successfully submitted a request for a password reset. An email
+      has been sent to that email with the reset link. Please check spam if it
+      does not appear in your inbox. Note that it may take several minutes to
+      arrive.
+    </p>
+    <button routerLink="/"></button>
+    }
+  </app-form-card>
+</section>

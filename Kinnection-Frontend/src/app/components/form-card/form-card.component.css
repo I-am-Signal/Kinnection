@@ -10,3 +10,7 @@
   max-width: 25em;
   padding: 2em 0 4em;
 }
+
+app-tooltip {
+  padding-bottom: 1em;
+}
