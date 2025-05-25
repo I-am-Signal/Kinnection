@@ -72,13 +72,6 @@ static class UserAPIs
                     detail: a.Message,
                     statusCode: 400);
             }
-            catch (AuthenticationException a)
-            {
-                Console.WriteLine($"Issue with POST /users/: {a}");
-                return Results.Problem(
-                    detail: a.Message,
-                    statusCode: 401);
-            }
             catch (InvalidOperationException i)
             {
                 Console.WriteLine($"Issue with POST /users/: {i}");

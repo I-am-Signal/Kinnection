@@ -98,14 +98,25 @@ This code will expire in 15 minutes. Do not share this code with anyone else.",
                     .Include(a => a.User)
                     .First(a => a.User.ID == Request.Id);
 
-                var ProcessedToken = Authenticator.ProcessToken(UserAuth.Reset);
+                Dictionary<string, Dictionary<string, System.Text.Json.JsonElement>> ProcessedToken;
+                try
+                {
+                    ProcessedToken = Authenticator.ProcessToken(UserAuth.Reset);
+                }
+                catch (Exception)
+                {
+                    throw new AuthenticationException("No password reset attempt was requested. Password reset denied.");
+                }
 
                 // Verify passcode has not expired
                 if (Authenticator.IsExpired(
                     DateTimeOffset.FromUnixTimeSeconds(
                         ProcessedToken["payload"]["exp"].GetInt64())))
-                    throw new AuthenticationException("Expired Reset Token");
-
+                {
+                    UserAuth.Reset = Authenticator.GenerateRandomString();
+                    Context.SaveChanges();
+                    throw new AuthenticationException("Passcode has expired.");
+                }
                 ProcessedToken["payload"].TryGetValue("psc", out var PassCode);
 
                 // Verify passcode against stored passcode token
