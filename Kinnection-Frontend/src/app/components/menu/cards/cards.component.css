@@ -1,0 +1,19 @@
+section {
+    height: 82.9vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+}
+
+.tree {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 3em;
+    height: 10em;
+    width: 16em;
+    margin: 1em 1em;
+
+    &:hover {
+        box-shadow: 0 0 1em black;
+        cursor: pointer;
+    }
+}

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { TooltipComponent } from '../../../components/tooltip/tooltip.component';
 import { TextboxComponent } from '../../../components/textbox/textbox.component';
 import { ButtonComponent } from '../../../components/button/button.component';
@@ -9,7 +9,7 @@ import { FormControl, Validators } from '@angular/forms';
 import { environment as env } from '../../../../environments/environment';
 import { Router } from '@angular/router';
 import { AnchorComponent } from '../../../components/anchor/anchor.component';
-import { Login } from '../../../models/auth';
+import { Login, Verify } from '../../../models/auth';
 
 @Component({
   selector: 'app-login',
@@ -23,7 +23,7 @@ import { Login } from '../../../models/auth';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   router = inject(Router);
   keymaster = inject(KeymasterService);
   http = inject(NetrunnerService);
@@ -70,6 +70,18 @@ export class LoginComponent {
               alert('500 Internal Server Error. Please try again later.');
           }
         },
+      });
+  }
+
+  ngOnInit(): void {
+    // Check if existing user credentials are valid
+    this.http
+      .post<Verify>(`${env.ISSUER}:${env.ASP_PORT}/auth/verify`)
+      .subscribe({
+        next: (response) => {
+          this.router.navigateByUrl(`/dashboard/${response.body?.id}`);
+        },
+        error: () => {}, // User needs to login
       });
   }
 }

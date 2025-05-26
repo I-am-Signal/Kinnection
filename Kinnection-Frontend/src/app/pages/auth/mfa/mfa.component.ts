@@ -3,12 +3,12 @@ import { FormCardComponent } from '../../../components/form-card/form-card.compo
 import { TooltipComponent } from '../../../components/tooltip/tooltip.component';
 import { TextboxComponent } from '../../../components/textbox/textbox.component';
 import { ButtonComponent } from '../../../components/button/button.component';
-import { firstValueFrom } from 'rxjs';
 import { environment as env } from '../../../../environments/environment';
 import { KeymasterService } from '../../../services/keymaster.service';
 import { NetrunnerService } from '../../../services/netrunner.service';
 import { Login } from '../../../models/auth';
 import { ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-mfa',
@@ -22,15 +22,16 @@ import { ActivatedRoute } from '@angular/router';
   styleUrl: './mfa.component.css',
 })
 export class MfaComponent implements OnInit {
-  private route = inject(ActivatedRoute)
+  private route = inject(ActivatedRoute);
   id = signal('');
   passcode = signal('');
   keymaster = inject(KeymasterService);
   http = inject(NetrunnerService);
+  router = inject(Router);
 
   ngOnInit(): void {
     const param = this.route.snapshot.paramMap.get('id');
-    if (param) this.id.set(param)
+    if (param) this.id.set(param);
   }
 
   async onSubmitClick() {
@@ -44,12 +45,26 @@ export class MfaComponent implements OnInit {
       passcode: this.passcode(),
     };
 
-    let mfa_response = await firstValueFrom(
-      this.http.post<Login>(`${env.ISSUER}:${env.ASP_PORT}/auth/mfa`, content)
-    );
-    console.log('MFA Status:', mfa_response.status);
-
-    // Route to user dash on mfa success
-    // Report issue to user on unsuccessful login
+    this.http
+      .post<Login>(`${env.ISSUER}:${env.ASP_PORT}/auth/mfa`, content)
+      .subscribe({
+        next: (response) => {
+          // this.router.navigateByUrl(``);
+        },
+        error: (err) => {
+          switch (err.status) {
+            case 401:
+              alert(
+                '401 Authorized: ' +
+                  (err.error?.detail ??
+                    'Incorrect passcode. Login attempt failed.')
+              );
+              this.router.navigateByUrl('/login');
+              break;
+            default:
+              alert('500 Internal Server Error. Please try again later.');
+          }
+        },
+      });
   }
 }

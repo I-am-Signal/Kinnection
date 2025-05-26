@@ -1,0 +1,12 @@
+<section>
+  @for (tree of trees(); track $index) {
+  <button class="tree">
+    <p>Tree ID: {{ tree.id }}</p>
+    <p>The {{ tree.name }} Family</p>
+  </button>
+  } @if (trees().length == 0){
+  <button class="tree">
+    <p>No trees found.</p>
+  </button>
+  }
+</section>

@@ -55,4 +55,13 @@ export const routes: Routes = [
       );
     },
   },
+  {
+    path: 'dashboard/:id',
+    pathMatch: 'full',
+    loadComponent() {
+      return import('./pages/userdash/userdash.component').then(
+        (m) => m.UserdashComponent
+      );
+    },
+  },
 ];

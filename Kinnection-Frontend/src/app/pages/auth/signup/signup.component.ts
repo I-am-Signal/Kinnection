@@ -4,12 +4,12 @@ import { ButtonComponent } from '../../../components/button/button.component';
 import { NetrunnerService } from '../../../services/netrunner.service';
 import { environment as env } from '../../../../environments/environment';
 import { ModifyUsers } from '../../../models/users';
-import { firstValueFrom } from 'rxjs';
 import { KeymasterService } from '../../../services/keymaster.service';
 import { TooltipComponent } from '../../../components/tooltip/tooltip.component';
 import { FormCardComponent } from '../../../components/form-card/form-card.component';
 import { FormControl, Validators } from '@angular/forms';
 import { AnchorComponent } from '../../../components/anchor/anchor.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-signup',
@@ -31,6 +31,7 @@ export class SignupComponent {
   confirm = signal('');
   http = inject(NetrunnerService);
   keymaster = inject(KeymasterService);
+  router = inject(Router);
 
   isNullOrWhitespace(str: string | null | undefined): boolean {
     return str === null || str === undefined || str.trim() === '';
@@ -49,7 +50,7 @@ export class SignupComponent {
 
     const EmailValidator = new FormControl(this.email(), [Validators.email]);
 
-    if (!EmailValidator.valid || this.email() == "") {
+    if (!EmailValidator.valid || this.email() == '') {
       alert('Email address is invalid.');
       return;
     }
@@ -73,16 +74,32 @@ export class SignupComponent {
       password: encPass,
     };
 
-    let post_response = await firstValueFrom(
-      this.http.post<ModifyUsers>(
-        `${env.ISSUER}:${env.ASP_PORT}/users`,
-        content
-      )
-    );
-    var id = post_response.body?.id ?? 0;
-    console.log('Post ID:', id);
-
-    // Route to user dashboard on successful account creation
-    // Report issue to user on unsuccessful account creation
+    this.http
+      .post<ModifyUsers>(`${env.ISSUER}:${env.ASP_PORT}/users`, content)
+      .subscribe({
+        next: (response) => {
+          this.router.navigateByUrl(`/dashboard/${response.body?.id}`);
+        },
+        error: (err) => {
+          switch (err.status) {
+            case 400:
+              alert(
+                '400 Bad Request: ' +
+                  (err.error?.detail ??
+                    'One or more values provided are invalid.')
+              );
+              break;
+            case 409:
+              alert(
+                `409 Conflict: ` +
+                  (err.error?.detail ??
+                    `An account with email ${this.email()} already exists.`)
+              );
+              break;
+            case 500:
+              alert('500 Internal Server Error. Please try again later.');
+          }
+        },
+      });
   }
 }

@@ -1,0 +1,9 @@
+<div class="menu">
+  <app-sidebar
+    [ubutton1]="'Create New Tree'"
+    (u1Clicked)="onCreateClick()"
+    [lbutton1]="'Account Settings'"
+    (l1Clicked)="onSettingsClick()"
+  ></app-sidebar>
+  <app-cards [trees]="trees()"></app-cards>
+</div>

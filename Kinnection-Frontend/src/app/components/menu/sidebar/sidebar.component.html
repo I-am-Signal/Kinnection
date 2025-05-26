@@ -1,0 +1,38 @@
+<section class="{{ close() }}">
+  <div class="upper">
+    @if(ubutton1()){
+    <button (click)="onU1Click($event)">{{ ubutton1() }}</button>}
+    @if(ubutton2()){
+    <button (click)="onU2Click($event)">{{ ubutton2() }}</button>}
+    @if(ubutton3()){
+    <button (click)="onU3Click($event)">{{ ubutton3() }}</button>}
+    @if(ubutton4()){
+    <button (click)="onU4Click($event)">{{ ubutton4() }}</button>}
+    @if(ubutton5()){
+    <button (click)="onU5Click($event)">{{ ubutton5() }}</button>}
+  </div>
+  <div class="lower">
+    @if(lbutton1()){
+    <button (click)="onL1Click($event)">{{ lbutton1() }}</button>}
+    @if(lbutton2()){
+    <button (click)="onL2Click($event)">{{ lbutton2() }}</button>}
+  </div>
+  <div (click)="onPullTabClick()" class="pulltab">
+    <svg
+      class="arrow {{ pushDirection() }}"
+      xmlns="http://www.w3.org/2000/svg"
+      width="30"
+      height="30"
+      viewBox="0 0 22 22"
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="3"
+        d="M20 12H10m10 0l-4 4m4-4l-4-4M4 4v16"
+      />
+    </svg>
+  </div>
+</section>

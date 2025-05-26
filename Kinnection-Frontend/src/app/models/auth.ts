@@ -5,3 +5,7 @@ export type Login = {
   lname: string;
   email: string;
 };
+
+export type Verify = {
+  id: number;
+};

@@ -1,0 +1,7 @@
+.menu {
+    display: flex;
+}
+
+app-cards {
+    margin-left: 2em;
+}

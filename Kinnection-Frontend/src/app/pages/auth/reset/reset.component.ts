@@ -5,12 +5,10 @@ import { ButtonComponent } from '../../../components/button/button.component';
 import { FormCardComponent } from '../../../components/form-card/form-card.component';
 import { KeymasterService } from '../../../services/keymaster.service';
 import { NetrunnerService } from '../../../services/netrunner.service';
-import { FormControl, Validators } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
 import { environment as env } from '../../../../environments/environment';
 import { ActivatedRoute } from '@angular/router';
 import { HttpHeaders } from '@angular/common/http';
-import { HomeComponent } from "../../../components/home/home.component";
+import { HomeComponent } from '../../../components/home/home.component';
 
 @Component({
   selector: 'app-reset',
@@ -19,8 +17,8 @@ import { HomeComponent } from "../../../components/home/home.component";
     FormCardComponent,
     TextboxComponent,
     TooltipComponent,
-    HomeComponent
-],
+    HomeComponent,
+  ],
   templateUrl: './reset.component.html',
   styleUrl: './reset.component.css',
 })
@@ -36,7 +34,7 @@ export class ResetComponent implements OnInit {
   ngOnInit(): void {
     const param = this.route.snapshot.paramMap.get('reset-token');
     if (param) this.resetToken.set(param);
-    else alert("Missing token required for password reset request.")
+    else alert('Missing token required for password reset request.');
   }
 
   async onSubmitClick() {
@@ -61,7 +59,7 @@ export class ResetComponent implements OnInit {
         `${env.ISSUER}:${env.ASP_PORT}/auth/pass/reset`,
         content,
         new HttpHeaders({
-          "X-Reset-Token": this.resetToken()
+          'X-Reset-Token': this.resetToken(),
         })
       )
       .subscribe({
@@ -70,15 +68,21 @@ export class ResetComponent implements OnInit {
           // Route to user dashboard on successful account creation
         },
         error: (err) => {
-          switch (err.status)
-          {
+          switch (err.status) {
             case 400:
-              alert('400 Bad Request: ' + (err.error?.detail ?? 'Password cannot be the same as a previous used password.'));
+              alert(
+                '400 Bad Request: ' +
+                  (err.error?.detail ??
+                    'Password cannot be the same as a previous used password.')
+              );
               break;
             case 401:
-              alert('401 Unauthorized: ' + (err.error?.detail ?? 'Access denied'));
+              alert(
+                '401 Unauthorized: ' + (err.error?.detail ?? 'Access denied')
+              );
               break;
             default:
+              alert('500 Internal Server Error');
               break;
           }
         },
