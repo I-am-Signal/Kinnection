@@ -129,7 +129,7 @@ This code will expire in 15 minutes. Do not share this code with anyone else.",
 
                 // Provision tokens
                 Authenticator.Provision(Request.Id, httpContext);
-                return Results.NoContent();
+                return Results.Ok(new PostLoginResponse { Id = Request.Id });
             }
             catch (AuthenticationException a)
             {

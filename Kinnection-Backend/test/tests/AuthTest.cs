@@ -164,7 +164,7 @@ public class AuthTest
 
         // Manually check email for confirmation that services works
 
-        // Check passcode verification
+        // Verify with mfa passcode
         using var Context = DatabaseManager.GetActiveContext();
 
         var UserAuth = Context.Authentications
@@ -188,7 +188,12 @@ public class AuthTest
         );
 
         // Ensure expected status code
-        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Evaluate Content
+        Output = JsonSerializer.Deserialize<JsonElement>(
+            await Response.Content.ReadAsStringAsync());
+        Output.GetProperty("id").GetInt32();
 
         // Evaluate Headers
         // Verify and save tokens
