@@ -75,11 +75,6 @@ namespace Kinnection
         public required DateOnly? Adopted { get; set; }
     }
 
-    public class GetAllChildrenResponse
-    {
-        public required List<GetChildrenResponse> Children { get; set; }
-    }
-
     // Trees/Members/Education History
     public class GetEducationResponse : IId, ITimeline, IEvent
     {
@@ -89,11 +84,6 @@ namespace Kinnection
         public required string Title { get; set; }
         public required string? Organization { get; set; }
         public required string? Description { get; set; }
-    }
-
-    public class GetAllEducationResponse
-    {
-        public required List<GetEducationResponse> Education_History { get; set; }
     }
 
     public class PostEducationResponse : IId
@@ -112,11 +102,6 @@ namespace Kinnection
         public required string? Description { get; set; }
     }
 
-    public class GetAllHobbiesResponse
-    {
-        public required List<GetHobbiesResponse> Hobbies { get; set; }
-    }
-
     // Trees/Members/Emails
     public class GetEmailsResponse : IId, IPrimary
     {
@@ -125,22 +110,12 @@ namespace Kinnection
         public required bool Primary { get; set; }
     }
 
-    public class GetAllEmailsResponse
-    {
-        public required List<GetEmailsResponse> emails { get; set; }
-    }
-
     // Trees/Members/Phones
     public class GetPhonesResponse : IId, IPrimary
     {
         public required int Id { get; set; }
         public required string Phone_number { get; set; }
         public required bool Primary { get; set; }
-    }
-
-    public class GetAllPhonesResponse
-    {
-        public required List<GetPhonesResponse> Phones { get; set; }
     }
 
     // Trees/Members/Residences
@@ -154,11 +129,6 @@ namespace Kinnection
         public required string Country { get; set; }
     }
 
-    public class GetAllResidencesResponse
-    {
-        public required List<GetResidencesResponse> Residences { get; set; }
-    }
-
     // Trees/Members/Spouses
     public class GetSpousesResponse : IId, ITimeline
     {
@@ -167,11 +137,6 @@ namespace Kinnection
         public required int Wife_id { get; set; }
         public required DateOnly? Started { get; set; }
         public required DateOnly? Ended { get; set; }
-    }
-
-    public class GetAllSpousesResponse
-    {
-        public required List<GetSpousesResponse> Spouses { get; set; }
     }
 
     // Trees/Members/Work History
@@ -183,11 +148,6 @@ namespace Kinnection
         public required string Title { get; set; }
         public required string? Organization { get; set; }
         public required string? Description { get; set; }
-    }
-
-    public class GetAllWorkResponse
-    {
-        public required List<GetWorkResponse> Work_history { get; set; }
     }
 
     // Users

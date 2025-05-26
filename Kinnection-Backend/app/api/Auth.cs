@@ -356,9 +356,9 @@ If the above link did not work, please copy and paste the following link into yo
                 using var Context = DatabaseManager.GetActiveContext();
 
                 // Authenticate User
-                Authenticator.Authenticate(Context, httpContext: httpContext);
+                (var _, var UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
 
-                return Results.NoContent();
+                return Results.Ok(new PostLoginResponse { Id = UserID });
             }
             catch (AuthenticationException a)
             {

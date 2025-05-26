@@ -206,7 +206,12 @@ public class AuthTest
         );
 
         // Ensure expected status code
-        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+        Assert.That(Response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        // Evaluate Content
+        var Output = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+            await Response.Content.ReadAsStringAsync());
+        Output!["id"].GetInt32();
 
         // Evaluate Headers
         // Verify and save tokens
