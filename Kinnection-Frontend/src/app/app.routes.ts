@@ -40,7 +40,7 @@ export const routes: Routes = [
   {
     path: 'forgot',
     pathMatch: 'full',
-    loadComponent() {
+    loadComponent: () => {
       return import('./pages/auth/forgot/forgot.component').then(
         (m) => m.ForgotComponent
       );
@@ -49,7 +49,7 @@ export const routes: Routes = [
   {
     path: 'reset/:reset-token',
     pathMatch: 'full',
-    loadComponent() {
+    loadComponent: () => {
       return import('./pages/auth/reset/reset.component').then(
         (m) => m.ResetComponent
       );
@@ -61,6 +61,15 @@ export const routes: Routes = [
     loadComponent() {
       return import('./pages/userdash/userdash.component').then(
         (m) => m.UserdashComponent
+      );
+    },
+  },
+  {
+    path: 'logout',
+    pathMatch: 'full',
+    loadComponent: () => {
+      return import('./pages/auth/logout/logout.component').then(
+        (m) => m.LogoutComponent
       );
     },
   },

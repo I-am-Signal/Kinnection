@@ -9,6 +9,7 @@ import { RouterLink } from '@angular/router';
 })
 export class HeaderComponent {
   homeRoute = input.required();
+  logoRoute = input('/');
   route1 = input.required();
   route1Text = input.required();
   route2 = input.required();

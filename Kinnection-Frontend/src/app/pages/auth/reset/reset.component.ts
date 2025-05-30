@@ -9,6 +9,7 @@ import { environment as env } from '../../../../environments/environment';
 import { ActivatedRoute } from '@angular/router';
 import { HttpHeaders } from '@angular/common/http';
 import { HomeComponent } from '../../../components/home/home.component';
+import { HeaderStateService } from '../../../services/header-manager.service';
 
 @Component({
   selector: 'app-reset',
@@ -23,6 +24,10 @@ import { HomeComponent } from '../../../components/home/home.component';
   styleUrl: './reset.component.css',
 })
 export class ResetComponent implements OnInit {
+  constructor(headerState: HeaderStateService) {
+    headerState.setDefaultRoutes();
+  }
+
   resetToken = signal('');
   password = signal('');
   confirm = signal('');

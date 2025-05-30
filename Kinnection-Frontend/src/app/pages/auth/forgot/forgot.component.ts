@@ -7,6 +7,7 @@ import { FormControl, Validators } from '@angular/forms';
 import { NetrunnerService } from '../../../services/netrunner.service';
 import { environment as env } from '../../../../environments/environment';
 import { RouterLink } from '@angular/router';
+import { HeaderStateService } from '../../../services/header-manager.service';
 
 @Component({
   selector: 'app-forgot',
@@ -21,6 +22,10 @@ import { RouterLink } from '@angular/router';
   styleUrl: './forgot.component.css',
 })
 export class ForgotComponent {
+  constructor(headerState: HeaderStateService) {
+    headerState.setDefaultRoutes();
+  }
+  
   email = signal('');
   http = inject(NetrunnerService);
   check = signal(false);

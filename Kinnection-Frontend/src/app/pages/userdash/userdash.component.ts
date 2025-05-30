@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { mockTrees } from '../../models/mock';
 import { SidebarComponent } from '../../components/menu/sidebar/sidebar.component';
 import { CardsComponent } from '../../components/menu/cards/cards.component';
+import { HeaderStateService } from '../../services/header-manager.service';
 
 @Component({
   selector: 'app-userdash',
@@ -14,6 +15,8 @@ import { CardsComponent } from '../../components/menu/cards/cards.component';
   styleUrl: './userdash.component.css',
 })
 export class UserdashComponent implements OnInit {
+  constructor(private headerState: HeaderStateService) {}
+
   private route = inject(ActivatedRoute);
   router = inject(Router);
   http = inject(NetrunnerService);
@@ -28,6 +31,7 @@ export class UserdashComponent implements OnInit {
     this.http.get<BaseTrees>(`${env.ISSUER}:${env.ASP_PORT}/trees`).subscribe({
       next: (response) => {
         this.trees.set(response.body?.trees ?? []);
+        this.headerState.setLoggedIn(this.id());
       },
       error: (err) => {
         switch (err.status) {

@@ -10,6 +10,7 @@ import { environment as env } from '../../../../environments/environment';
 import { Router } from '@angular/router';
 import { AnchorComponent } from '../../../components/anchor/anchor.component';
 import { Login, Verify } from '../../../models/auth';
+import { HeaderStateService } from '../../../services/header-manager.service';
 
 @Component({
   selector: 'app-login',
@@ -24,6 +25,10 @@ import { Login, Verify } from '../../../models/auth';
   styleUrl: './login.component.css',
 })
 export class LoginComponent implements OnInit {
+  constructor(headerState: HeaderStateService) {
+    headerState.setDefaultRoutes();
+  }
+  
   router = inject(Router);
   keymaster = inject(KeymasterService);
   http = inject(NetrunnerService);

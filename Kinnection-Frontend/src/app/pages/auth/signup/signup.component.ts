@@ -10,6 +10,7 @@ import { FormCardComponent } from '../../../components/form-card/form-card.compo
 import { FormControl, Validators } from '@angular/forms';
 import { AnchorComponent } from '../../../components/anchor/anchor.component';
 import { Router } from '@angular/router';
+import { HeaderStateService } from '../../../services/header-manager.service';
 
 @Component({
   selector: 'app-signup',
@@ -24,6 +25,10 @@ import { Router } from '@angular/router';
   styleUrl: './signup.component.css',
 })
 export class SignupComponent {
+  constructor(headerState: HeaderStateService) {
+    headerState.setDefaultRoutes();
+  }
+  
   fname = signal('');
   lname = signal('');
   email = signal('');

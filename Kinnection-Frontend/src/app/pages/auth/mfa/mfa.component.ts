@@ -9,6 +9,7 @@ import { NetrunnerService } from '../../../services/netrunner.service';
 import { Login } from '../../../models/auth';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
+import { HeaderStateService } from '../../../services/header-manager.service';
 
 @Component({
   selector: 'app-mfa',
@@ -22,6 +23,10 @@ import { Router } from '@angular/router';
   styleUrl: './mfa.component.css',
 })
 export class MfaComponent implements OnInit {
+  constructor(headerState: HeaderStateService) {
+    headerState.setDefaultRoutes();
+  }
+
   private route = inject(ActivatedRoute);
   id = signal('');
   passcode = signal('');
@@ -36,7 +41,7 @@ export class MfaComponent implements OnInit {
 
   async onSubmitClick() {
     if (this.passcode().length != 6) {
-      alert('Password is invalid.');
+      alert('Passcode is invalid.');
       return;
     }
 
@@ -49,7 +54,7 @@ export class MfaComponent implements OnInit {
       .post<Login>(`${env.ISSUER}:${env.ASP_PORT}/auth/mfa`, content)
       .subscribe({
         next: (response) => {
-          // this.router.navigateByUrl(``);
+          this.router.navigateByUrl(`/dashboard/${response.body?.id}`);
         },
         error: (err) => {
           switch (err.status) {
