@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { environment as env } from '../../environments/environment';
 import { NetrunnerService } from './netrunner.service';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -42,16 +43,18 @@ export class KeymasterService {
   }
 
   async encrypt(plainText: string): Promise<string> {
-    if (!this.publicKeyPem) {
-      this.http.get(`${env.ISSUER}:${env.ASP_PORT}/auth/public`).subscribe({
-        next: (response) => {
-          this.publicKeyPem = response.headers.get('X-Public');
-        },
-        error: () => {
-          alert('500 Internal Server Error. Please try again later.');
-        },
-      });
+    // Check if public key exists
+    if (this.publicKeyPem) {
+      return this.encryptWithRSA_OAEP_SHA256(plainText, this.publicKeyPem);
     }
+
+    // Public key does not exist, get it and then encrypt
+    const response = await firstValueFrom(
+      this.http.get(`${env.ISSUER}:${env.ASP_PORT}/auth/public`)
+    );
+    if (response.status != 204) throw new Error('Failed to retrieve public key.');
+    this.publicKeyPem = response.headers.get('X-Public');
+
     return this.encryptWithRSA_OAEP_SHA256(plainText, this.publicKeyPem!);
   }
 }
