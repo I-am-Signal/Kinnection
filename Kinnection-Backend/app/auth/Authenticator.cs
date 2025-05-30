@@ -13,6 +13,7 @@ public static class Authenticator
         "{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
     private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER")!;
     private static readonly string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!;
+
     /// <summary>
     /// Adds the access and refresh tokens to the Set-Cookie header as 'Authorization' and 
     /// 'X-Refresh-Token' respectively.
@@ -76,6 +77,18 @@ public static class Authenticator
             "Authorization", $"Bearer {Access}", AccessOptions);
         httpContext.Response.Cookies.Append(
             "X-Refresh-Token", Refresh, RefreshOptions);
+    }
+
+    /// <summary>
+    /// Removes the 'Authorization' and 'X-Refresh-Token' tokens from the Set-Cookie header.
+    /// </summary>
+    /// <param name="httpContext"></param>
+    public static void RemoveHttpOnlyTokens(HttpContext httpContext)
+    {
+        httpContext.Response.Cookies.Append(
+            "Authorization", "");
+        httpContext.Response.Cookies.Append(
+            "X-Refresh-Token", "");
     }
 
     /// <summary>

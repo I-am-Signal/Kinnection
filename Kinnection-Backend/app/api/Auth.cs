@@ -157,8 +157,7 @@ This code will expire in 15 minutes. Do not share this code with anyone else.",
                 Authenticator.Authenticate(Context, httpContext: httpContext);
 
                 // No tokens needed on successful logout
-                httpContext.Response.Headers.Authorization = "";
-                httpContext.Response.Headers["X-Refresh-Token"] = "";
+                Authenticator.RemoveHttpOnlyTokens(httpContext);
 
                 return Results.NoContent();
             }
