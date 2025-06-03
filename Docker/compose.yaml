@@ -8,7 +8,7 @@ services:
         aliases:
           - mysql
     ports:
-      - "${MYSQL_CONTAINER_PORT}:${MYSQL_PORT}"
+      - "${MYSQL_EXTERNAL_PORT}:${MYSQL_CONTAINER_PORT}"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -44,23 +44,23 @@ services:
           - aspdotnet
     container_name: asp
     ports:
-      - "${ASP_CONTAINER_PORT}:${ASP_PORT}"
+      - "${ASP_EXTERNAL_PORT}:${ASP_CONTAINER_PORT}"
     environment:
       ACCESS_DURATION: ${ACCESS_DURATION}
-      ANG_PORT: ${ANG_PORT}
+      ANG_EXTERNAL_PORT: ${ANG_EXTERNAL_PORT}
       ANG_PORT_LOCAL: ${ANG_PORT_LOCAL}
       APPLY_MIGRATIONS: ${APPLY_MIGRATIONS}
-      ASP_PORT: ${ASP_PORT}
+      ASP_EXTERNAL_PORT: ${ASP_EXTERNAL_PORT}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ENC_KEY_DUR: ${ENC_KEY_DUR}
       FROM_EMAIL: ${FROM_EMAIL}
       FROM_NAME: ${FROM_NAME}
+      HASHING_KEY: ${HASHING_KEY}
       ISSUER: ${ISSUER}
-      KEY: ${KEY}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_EXTERNAL_PORT: ${MYSQL_EXTERNAL_PORT}
       MYSQL_HOST: ${MYSQL_HOST}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_PORT: ${MYSQL_PORT}
       MYSQL_PROTOCOL: ${MYSQL_PROTOCOL}
       MYSQL_USER: ${MYSQL_USER}
       REFRESH_DURATION: ${REFRESH_DURATION}
@@ -76,7 +76,7 @@ services:
       dockerfile: ./Docker/Kinnection-Frontend.dockerfile
     container_name: ang
     ports:
-      - "${ANG_CONTAINER_PORT}:${ANG_PORT}"
+      - "${ANG_EXTERNAL_PORT}:${ANG_CONTAINER_PORT}"
     environment:
       ANG_CONTAINER_PORT: ${ANG_CONTAINER_PORT}
     depends_on:

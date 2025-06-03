@@ -5,7 +5,7 @@ class Program
   static void Main()
   {
     // Get required env vars
-    var ANG_PORT = Environment.GetEnvironmentVariable("ANG_PORT");
+    var ANG_PORT = Environment.GetEnvironmentVariable("ANG_EXTERNAL_PORT");
     var ISSUER = Environment.GetEnvironmentVariable("ISSUER");
     if (string.IsNullOrWhiteSpace(ANG_PORT) || string.IsNullOrWhiteSpace(ISSUER))
       throw new Exception("Missing value for an Angular environment variable!");
@@ -23,7 +23,7 @@ class Program
     IEnumerable<string> Origins = new List<string>
     {
       ISSUER, // Root
-      $"{ISSUER}:{ANG_PORT}", // Root with container port
+      $"{ISSUER}:{ANG_PORT}", // Root with frontend port
     };
 
     // Add in dev services

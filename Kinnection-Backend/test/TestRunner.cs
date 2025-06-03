@@ -111,7 +111,7 @@ public static class TestRunner
         if (URI == string.Empty)
         {
             string ISSUER = Environment.GetEnvironmentVariable("ISSUER")!;
-            string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!;
+            string ASP_PORT = Environment.GetEnvironmentVariable("ASP_EXTERNAL_PORT")!;
 
             if (string.IsNullOrEmpty(ISSUER) || string.IsNullOrEmpty(ASP_PORT))
                 throw new ApplicationException("Environment variables are null!");

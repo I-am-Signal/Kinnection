@@ -17,9 +17,9 @@ namespace Kinnection
         /// <exception cref="Exception"></exception>
         private static byte[] GetKey()
         {
-            string RawKey = Environment.GetEnvironmentVariable("KEY")!;
+            string RawKey = Environment.GetEnvironmentVariable("HASHING_KEY")!;
             if (string.IsNullOrEmpty(RawKey))
-                throw new Exception("KEY environment variable is null or empty!");
+                throw new Exception("HASHING_KEY environment variable is null or empty!");
             return Encoding.UTF8.GetBytes(RawKey);
         }
 

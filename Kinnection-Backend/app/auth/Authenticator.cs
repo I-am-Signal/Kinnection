@@ -12,7 +12,7 @@ public static class Authenticator
     private static readonly string EncodedHeader = Base64UrlEncoder.Encode(
         "{\"alg\":\"RS256\",\"typ\":\"JWT\"}");
     private static readonly string ISSUER = Environment.GetEnvironmentVariable("ISSUER")!;
-    private static readonly string ASP_PORT = Environment.GetEnvironmentVariable("ASP_PORT")!;
+    private static readonly string ASP_PORT = Environment.GetEnvironmentVariable("ASP_EXTERNAL_PORT")!;
 
     /// <summary>
     /// Adds the access and refresh tokens to the Set-Cookie header as 'Authorization' and 
