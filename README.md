@@ -2,9 +2,10 @@
 
 Kinnection is a web application that will allow the user to track their family tree. Using this system, the user will be able to:
 
-- Login (via direct login or Google Sign-On, potentially both later)
-- CRUD Family trees through a dashboard UI
-- CRUD Family members in family trees through a tree-specific UI
+- Sign up or login via custom authentication system with 2FA
+- Create, modify, and remove family trees through a dashboard UI
+- Create, modify, and remove family members in family trees through a tree-specific UI
+- Share a created family tree via view-only share URL (when enabled by the user)
 
 ## Composition
 
@@ -18,7 +19,10 @@ Kinnection is a web application that will allow the user to track their family t
 ### Required Software
 
 - C#/.NET SDK 8.0+
+  - The C#/.NET SDK is required because the app requires at least one migration file to start up. Please follow the instructions under the [Migrations](#migrations) section to create one.
 - Docker Desktop (or just the Docker engine)
+- SendGrid API Key and Single Sender email address
+  - More details in the [Auth Management Vars](#auth-management-vars) section.
 
 ### Running in Development Environment
 
@@ -89,36 +93,47 @@ The `.env.template` file contains a template of the `.env` file that should be p
 
 ### MySQL Container Vars
 
-- `MYSQL_PROTOCOL`: Protocol for connecting to the database. For MySQL, it is `mysql`.
-- `MYSQL_PORT`: Port at which the database can be accessed.
-- `MYSQL_CONTAINER_PORT`: Port at which the container binds to the overlaying database.
-- `MYSQL_ROOT_PASSWORD`: Root password for the database .
+- `MYSQL_CONTAINER_PORT`: Port at which the container internally binds to the MySQL database.
 - `MYSQL_DATABASE`: Name of the database.
-- `MYSQL_USER`: User of the database.
-- `MYSQL_PASSWORD`: Password of the user.
+- `MYSQL_EXTERNAL_PORT`: Port at which the MySQL database is bound to your host machine and can be accessed.
 - `MYSQL_HOST`: Name of the host connection for the database.
-- `MYSQL_EXTERNAL_HOST`: Name of the local host connection of the database.
+- `MYSQL_PASSWORD`: Password of the user.
+- `MYSQL_PROTOCOL`: Protocol for connecting to the database. For MySQL, it is `mysql`.
+- `MYSQL_ROOT_PASSWORD`: Root password for the database.
+- `MYSQL_USER`: User of the database.
 
 ### ASP.NET Core Container Vars
 
+- `ASP_CONTAINER_PORT`: Port at which the container internally binds to the ASP.NET Core webapi app.
+- `ASP_EXTERNAL_PORT`: Port at which the ASP.NET Core webapi app is bound to your host machine and can be accessed.
 - `ASPNETCORE_ENVIRONMENT`: Environment in which the ASP.NET Core webapi app should assume. (`Development`, `Staging`, `Production`)
-- `ASP_PORT`: Port at which the ASP.NET Core webapi app can be accessed.
-- `ASP_CONTAINER_PORT`: Port at which the container binds to the overlaying webapi app.
 
 ### Database Management Vars
 
+- `APPLY_MIGRATIONS`: Whether to auto-apply migrations on startup of the ASP.NET Core app. 1 for True, 0 for False.
 - `RETRY_ATTEMPTS`: Number of times the ASP.NET Core webapi app reattempts to connection to the database
 - `RETRY_IN`: Number of seconds the ASP.NET Core webapi app waits between attempts
-- `APPLY_MIGRATIONS`: Whether to auto-apply migrations on startup of the ASP.NET Core app. 1 for True, 0 for False.
 
 ### Angular Container Vars
 
-- `ANG_PORT`: Port at which the Angular frontend app can be accessed.
-- `ANG_CONTAINER_PORT`: Port at which the container binds to the overlaying frontend app.
+- `ANG_CONTAINER_PORT`: Port at which the container internally binds to the Angular frontend app.
+- `ANG_EXTERNAL_PORT`: Port at which the Angular frontend app is bound to your host machine and can be accessed.
 
 ### Auth Management Vars
 
 - `ACCESS_DURATION`: Number of minutes an Access JWT is valid for before expiration
-- `REFRESH_DURATION`: Number of days a Refresh JWT is valid for before expiration
+- `ENC_KEY_DUR`: Number of days the encryption keys used for password E2EE are valid for, then rotated after.
+- `FROM_EMAIL`: The email address to send emails from via SendGrid.
+  - To create one after you have a SendGrid account, go to `Settings > Sender Authentication` and click `Verify a Single Sender` to set up an email to be used for sending emails to the client.
+- `FROM_NAME`: The name of the sender in emails sent via SendGrid.
+- `HASHING_KEY`: The hash key for passwords
 - `ISSUER`: The issuer URI for the JWTs
-- `KEY`: The hash key for passwords
+- `REFRESH_DURATION`: Number of days a Refresh JWT is valid for before expiration
+- `SENDGRID_API_KEY`: The API key provided by SendGrid for their emailing services.
+  - After creating an account, got to `Settings > API Keys` and click `Create API Key` to set up a usable key.
+
+### Local Development and Testing Vars
+
+- `ANG_PORT_LOCAL`: Port of the Angular app when developing locally.
+- `MANUAL_EMAIL_VERIFICATION`: Address to be sent emails to for manual verification emailing service is functional. This is NOT the sender email.
+- `MYSQL_EXTERNAL_HOST`: Name of the local host connection of the database.
