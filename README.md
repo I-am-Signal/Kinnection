@@ -18,35 +18,88 @@ Kinnection is a web application that will allow the user to track their family t
 
 ### Required Software
 
-- C#/.NET SDK 8.0+
-  - The C#/.NET SDK is required because the app requires at least one migration file to start up. Please follow the instructions under the [Migrations](#migrations) section to create one.
 - Docker Desktop (or just the Docker engine)
 - SendGrid API Key and Single Sender email address
   - More details in the [Auth Management Vars](#auth-management-vars) section.
+- C#/.NET SDK 8.0+ (Optional, only used for local, non-containerized development and testing)
 
-### Running in Development Environment
+### Running Kinnection for the First Time (Initialization)
 
 - Ensure all environment variables are filled in in the `.env` file in `Kinnection/Docker`.
 - Navigate to the `Kinnection/Docker` directory.
-- `docker compose up -d --build`:
+- Because a migration is required on the initial run of the application, the `migrate` profile is the first set of containers brought up, followed by the `default` profile containers (the app).
+
+**On Windows:**
+
+```powershell
+# Bring up the migration container and the database
+docker compose --profile migrate up --build
+# Please check that a migration was generated under 'Kinnection-Backend/app/Migrations'. It may take 30 seconds for one to be generated after the containers are loaded because the migration container has to connect to the database.
+
+# Bring up the containers
+docker compose --profile default up -d --build
+
+# Tear down the containers after starting for the first time:
+docker compose --profile migrate down -v;
+docker compose --profile default down -v
+
+# NOTE: The '-v' argument is used to remove all data volumes associated with the containers. If you wish to instead rebuild but keep the existing volumes for a slightly faster rebuild time, you can remove the '-v' from the commands.
+```
+
+**On Linux/Mac:**
+
+```bash
+# Bring up the migration container and the database
+docker compose --profile migrate up --build
+# Please check that a migration was generated under 'Kinnection-Backend/app/Migrations'. It may take 30 seconds for one to be generated after the containers are loaded because the migration container has to connect to the database.
+
+# Bring up the containers
+docker compose --profile default up -d --build
+
+# Tear down the containers after starting for the first time:
+docker compose --profile migrate down -v && \
+docker compose --profile default down -v
+
+# NOTE: The '-v' argument is used to remove all data volumes associated with the containers. If you wish to instead rebuild but keep the existing volumes for a slightly faster rebuild time, you can remove the '-v' from the commands.
+```
+
+### Running in Development Environment After Initialization
+
+- Ensure all environment variables are filled in in the `.env` file in `Kinnection/Docker`.
+- Navigate to the `Kinnection/Docker` directory.
+- `docker compose --profile default up -d --build`:
   - Builds and brings up the containers
-- `docker compose down <-v>`:
+- `docker compose --profile default down -v`:
   - Tears down the containers
-  - `-v` will also remove any associated container volumes.
-    - Only use this argument when you need a clean slate as it removes all associated permant data storage in the volumes.
+  - The `-v` argument is used to remove all data volumes associated with the containers. If you wish to instead rebuild but keep the existing volumes for a slightly faster rebuild time, you can remove the `-v` from the commands.
 
 ### Running Local Development Environment
 
-- Note: Currently only set up for frontend development this way. To use the backend alongside the locally-hosted frontend, bring up the containers.
+- Note: Currently only set up for frontend development this way. To use the backend alongside the locally-hosted frontend, bring up the containers and connect to the local port (typically 4200) instead of the the container port (typically 80)
 - Navigate to the `Kinnection/Kinnection-Frontend/src/environments` directory.
 - Enable file scripting permissions and set the environment files:
-  - Windows:
-    - `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
-    - `./SetEnvVars.ps1 -e "../../../Docker/.env"`
-  - MAC/Linux:
-    - `chmod +x /path/to/GetEnvVars.sh`
-    - `./SetEnvVars.sh -e "../../../Docker/.env"`
-  - Note: the environment file must be specified as `SetEnvVars` by default targets filepaths meant for use in the docker containers. They differ from the local development paths.
+
+**Windows:**
+
+```powershell
+# Permit the script to run (required only on initial run of this command):
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+# Set the environment variables
+./SetEnvVars.ps1 -e "../../../Docker/.env"
+```
+
+**MAC/Linux:**
+
+```bash
+# Permit the script to run (required only on initial run of this command):
+chmod +x /path/to/GetEnvVars.sh
+
+# Set the environment variables
+./SetEnvVars.sh -e "../../../Docker/.env"
+```
+
+- NOTE: the environment file must be specified as `SetEnvVars` by default targets filepaths meant for use in the docker containers. They differ from the local development paths.
 - Navigate back to `Kinnection/Kinnection-Frontend`.
 - Start the frontend with `npm start`.
 
@@ -56,34 +109,71 @@ Kinnection is a web application that will allow the user to track their family t
 
 - Navigate to the `Kinnection/Kinnection-Backend/test` directory.
 - Get environment variables needed for local run:
-  - Windows:
-    - `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
-    - `../app/GetEnvVars.ps1`
-  - MAC/Linux:
-    - `chmod +x /path/to/GetEnvVars.sh`
-    - `../app/GetEnvVars.sh`
-- `dotnet test` to run the tests
+
+**Windows:**
+
+```powershell
+# Get Environment Variables (required only on initial run of these commands):
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process;
+../app/GetEnvVars.ps1;
+
+# Run the tests
+dotnet test
+```
+
+**MAC/Linux:**
+
+```bash
+# Get Environment Variables (required only on initial run of these commands):
+chmod +x /path/to/GetEnvVars.sh && \
+../app/GetEnvVars.sh
+
+# Run the tests
+dotnet test
+```
 
 ## Migrations
 
+- Navigate to the `Kinnection/Kinnection-Backend/app` directory.
+
 **Generating a migration**:
 
-- Navigate to the `Kinnection/Kinnection-Backend/app` directory.
 - `dotnet ef migrations add MIGRATION_NAME`
 
 **Applying a migration**:
 
 - Navigate to the `Kinnection/Kinnection-Backend/app` directory.
 - Get environment variables needed for local run:
-  - Windows:
-    - `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
-    - `./GetEnvVars.ps1`
-  - MAC/Linux:
-    - `chmod +x /path/to/GetEnvVars.sh`
-    - `./GetEnvVars.sh`
-- Use `dotnet ef database update MIGRATION_NAME` to migration the database
 
-  - You can also use this command to migrate to a previous migration by using the older migration's name.
+**Windows:**
+
+```powershell
+# Get Environment Variables (required only on initial run of these commands):
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process;
+./GetEnvVars.ps1
+
+# Generating a Migration:
+dotnet ef migrations add MIGRATION_NAME
+
+# Applying a Migration:
+dotnet ef database update MIGRATION_NAME
+```
+
+**MAC/Linux:**
+
+```bash
+# Get Environment Variables (required only on initial run of these commands):
+chmod +x /path/to/GetEnvVars.sh && \
+./GetEnvVars.sh
+
+# Generating a Migration:
+dotnet ef migrations add MIGRATION_NAME
+
+# Applying a Migration:
+dotnet ef database update MIGRATION_NAME
+```
+
+- The migration application command can also be used to migrate the database to a previous migration by using the older migration's name.
 
 - _NOTE_: Existing/in-the-pipeline migrations are auto-applied to the database upon startup of the Kinnection-Backend app based on the `APPLY_MIGRATIONS` environment variable. For more information, please see the [Database Management Vars](#database-management-vars) section.
 
@@ -137,3 +227,8 @@ The `.env.template` file contains a template of the `.env` file that should be p
 - `ANG_PORT_LOCAL`: Port of the Angular app when developing locally.
 - `MANUAL_EMAIL_VERIFICATION`: Address to be sent emails to for manual verification emailing service is functional. This is NOT the sender email.
 - `MYSQL_EXTERNAL_HOST`: Name of the local host connection of the database.
+
+### Migration Container Vars
+
+- `MIG_CONTAINER_PORT`: Port at which the container internally binds to the backend migration app.
+- `MIG_EXTERNAL_PORT`: Port at which the backend migration app is bound to your host machine and can be accessed.
