@@ -177,8 +177,9 @@ public class TreesTest
     public async Task PosGetTrees()
     {
         // Make request
+        Console.WriteLine($"{URI}{UserInfo["id"].GetInt32()}/{TreesSubDir}");
         HttpResponseMessage Response = await HttpService.GetAsync(
-            URI + TreesSubDir,
+            $"{URI}{UserInfo["id"].GetInt32()}/{TreesSubDir}",
             Headers: TestRunner.GetHeaders()
         );
 

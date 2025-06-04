@@ -220,7 +220,7 @@ static class TreeAPIs
         .WithName("GetTree")
         .WithOpenApi();
 
-        app.MapGet("/trees/", (HttpContext httpContext) =>
+        app.MapGet("/{user_id}/trees/", (int user_id, HttpContext httpContext) =>
         {
             try
             {
@@ -228,6 +228,9 @@ static class TreeAPIs
 
                 // Authenticate
                 var (_, UserID) = Authenticator.Authenticate(Context, httpContext: httpContext);
+
+                if (UserID != user_id)
+                    throw new AuthenticationException("Cannot view family trees other than your own.");
 
                 // Compile response
                 return Results.Ok(
