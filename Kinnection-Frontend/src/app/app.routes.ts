@@ -73,4 +73,13 @@ export const routes: Routes = [
       );
     },
   },
+  {
+    path: 'account_details/:id',
+    pathMatch: 'full',
+    loadComponent: () => {
+      return import('./pages/account-details/account-details.component').then(
+        (m) => m.AccountDetailsComponent
+      );
+    }
+  }
 ];

@@ -1,0 +1,37 @@
+<section>
+  <app-form-card>
+    <h1>Account Details</h1>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'fname'"
+        [value]="fname()"
+        placeholder="First name"
+        (valueChange)="fname.set($event)"
+        [label]="'First name:'"
+      ></app-textbox>
+    </app-tooltip>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'lname'"
+        [label]="'Last name:'"
+        [value]="lname()"
+        placeholder="Last name"
+        (valueChange)="lname.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-tooltip [toolTipText]="'Required'">
+      <app-textbox
+        [name]="'email'"
+        [label]="'Email:'"
+        [value]="email()"
+        placeholder="Email address"
+        (valueChange)="email.set($event)"
+      ></app-textbox>
+    </app-tooltip>
+    <app-button [text]="'Save Changes'" (clicked)="onSubmitClick()"></app-button>
+    <app-home [homeRoute]="'/dashboard/' + id()"></app-home>
+    <p>
+      To reset your password, go to the signup page and click 'Forgot Password.'
+    </p>
+  </app-form-card>
+</section>

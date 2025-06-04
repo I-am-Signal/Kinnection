@@ -28,7 +28,7 @@ export class UserdashComponent implements OnInit {
     if (param) this.id.set(param);
 
     // Check if existing user credentials are valid
-    this.http.get<BaseTrees>(`${env.ISSUER}:${env.ASP_PORT}/trees`).subscribe({
+    this.http.get<BaseTrees>(`${env.ISSUER}:${env.ASP_PORT}/${this.id()}/trees`).subscribe({
       next: (response) => {
         this.trees.set(response.body?.trees ?? []);
         this.headerState.setLoggedIn(this.id());
@@ -42,6 +42,12 @@ export class UserdashComponent implements OnInit {
             );
             this.router.navigateByUrl('/login');
             break;
+          case 404:
+            alert(
+              '404 Not Found' +
+                (err.error?.detail ? `: ${err.error?.detail}` : '')
+            );
+            break;
           case 500:
             alert('500 Internal Server Error. Please try again later.');
         }
@@ -50,10 +56,10 @@ export class UserdashComponent implements OnInit {
   }
 
   onCreateClick() {
-    // this.router.navigateByUrl('/create_tree');
+    // this.router.navigateByUrl(`/create_tree`);
   }
 
   onSettingsClick() {
-    // this.router.navigateByUrl('/settings');
+    this.router.navigateByUrl(`/account_details/${this.id()}`);
   }
 }
