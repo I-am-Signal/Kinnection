@@ -2,21 +2,16 @@ services:
   mysql:
     image: mysql:9.0.0
     container_name: "${MYSQL_HOST}"
-    hostname: "${MYSQL_HOST}"
-    networks:
-      default:
-        aliases:
-          - mysql
-    ports:
-      - "${MYSQL_EXTERNAL_PORT}:${MYSQL_CONTAINER_PORT}"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - ../Kinnection-Database/data/:/var/lib/mysql
     healthcheck:
+      interval: 1m30s
+      retries: 5
+      start_period: 30s
+      timeout: 30s
       test:
         [
           "CMD",
@@ -28,23 +23,30 @@ services:
           "${MYSQL_USER}",
           "-p${MYSQL_PASSWORD}",
         ]
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
+    hostname: "${MYSQL_HOST}"
+    networks:
+      default:
+        aliases:
+          - mysql
+    ports:
+      - "${MYSQL_EXTERNAL_PORT}:${MYSQL_CONTAINER_PORT}"
+    profiles: ["default", "migrate"]
+    volumes:
+      - ../Kinnection-Database/data/:/var/lib/mysql
     restart: unless-stopped
 
   aspdotnet:
     build:
       context: ../
       dockerfile: ./Docker/Kinnection-Backend.dockerfile
-    networks:
-      default:
-        aliases:
-          - aspdotnet
+      args:
+        ANG_EXTERNAL_PORT: ${ANG_EXTERNAL_PORT}
+        ISSUER: ${ISSUER}
+        MYSQL_HOST: ${MYSQL_EXTERNAL_HOST}
+        MYSQL_PORT: ${MYSQL_EXTERNAL_PORT}
     container_name: asp
-    ports:
-      - "${ASP_EXTERNAL_PORT}:${ASP_CONTAINER_PORT}"
+    depends_on:
+      - mysql
     environment:
       ACCESS_DURATION: ${ACCESS_DURATION}
       ANG_EXTERNAL_PORT: ${ANG_EXTERNAL_PORT}
@@ -67,17 +69,44 @@ services:
       RETRY_ATTEMPTS: ${RETRY_ATTEMPTS}
       RETRY_IN: ${RETRY_IN}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
-    depends_on:
-      - mysql
+    networks:
+      default:
+        aliases:
+          - aspdotnet
+    ports:
+      - "${ASP_EXTERNAL_PORT}:${ASP_CONTAINER_PORT}"
+    profiles: ["default"]
+    volumes:
+      - ../Kinnection-Backend/app/Migrations:/Kinnection/app/Migrations
 
   angular:
     build:
       context: ../
       dockerfile: ./Docker/Kinnection-Frontend.dockerfile
     container_name: ang
-    ports:
-      - "${ANG_EXTERNAL_PORT}:${ANG_CONTAINER_PORT}"
-    environment:
-      ANG_CONTAINER_PORT: ${ANG_CONTAINER_PORT}
     depends_on:
       - aspdotnet
+    environment:
+      ANG_CONTAINER_PORT: ${ANG_CONTAINER_PORT}
+    ports:
+      - "${ANG_EXTERNAL_PORT}:${ANG_CONTAINER_PORT}"
+    profiles: ["default"]
+    
+  aspdotnet-migrate:
+    build:
+      context: ../
+      dockerfile: ./Docker/Migrate-Backend.dockerfile
+    container_name: asp-migrate
+    depends_on:
+      - mysql
+    env_file:
+      - "./.env"
+    networks:
+      default:
+        aliases:
+          - migrate
+    ports:
+      - "${ASP_EXTERNAL_PORT}:${ASP_CONTAINER_PORT}"
+    profiles: ["migrate"]
+    volumes:
+      - ../Kinnection-Backend/app/Migrations:/Kinnection/app/Migrations
