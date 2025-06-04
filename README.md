@@ -33,7 +33,7 @@ Kinnection is a web application that will allow the user to track their family t
 
 ```powershell
 # Bring up the migration container and the database
-docker compose --profile migrate up --build
+docker compose --profile migrate up --build --abort-on-container-exit
 # Please check that a migration was generated under 'Kinnection-Backend/app/Migrations'. It may take 30 seconds for one to be generated after the containers are loaded because the migration container has to connect to the database.
 
 # Bring up the containers
@@ -50,7 +50,7 @@ docker compose --profile default down -v
 
 ```bash
 # Bring up the migration container and the database
-docker compose --profile migrate up --build
+docker compose --profile migrate up --build --abort-on-container-exit
 # Please check that a migration was generated under 'Kinnection-Backend/app/Migrations'. It may take 30 seconds for one to be generated after the containers are loaded because the migration container has to connect to the database.
 
 # Bring up the containers
@@ -133,6 +133,22 @@ dotnet test
 ```
 
 ## Migrations
+
+### Migration Container Generation and Application
+
+- Navigate to the `Kinnection/Docker` directory.
+
+**Generating a migration**:
+
+- `docker compose --profile migrate up --build --abort-on-container-exit`
+  - Please check that a migration was generated under 'Kinnection-Backend/app/Migrations'. It may take 30 seconds for one to be generated after the containers are loaded because the migration container has to connect to the database.`
+- _NOTE_: Existing/in-the-pipeline migrations are auto-applied to the database upon startup of the Kinnection-Backend app based on the `APPLY_MIGRATIONS` environment variable. For more information, please see the [Database Management Vars](#database-management-vars) section.
+
+**Tearing Down the Container after Migration**:
+
+- `docker compose --profile migrate down -v`
+
+### Local Migration Generation and Application
 
 - Navigate to the `Kinnection/Kinnection-Backend/app` directory.
 
